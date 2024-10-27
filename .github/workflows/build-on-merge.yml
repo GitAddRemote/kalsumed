@@ -1,6 +1,6 @@
 # .github/workflows/build-on-merge.yml
 
-name: Build on Merge to Main or Feature Branches
+name: Build and Test Spring Boot Application with JDK 21
 
 on:
   pull_request:
@@ -8,24 +8,33 @@ on:
     branches:
       - main
       - 'feature/**'
-      - 'enhancement/**'
-      - 'fix/**'
 
 jobs:
   build:
     if: ${{ github.event.pull_request.merged }}
     runs-on: ubuntu-latest
+    env:
+      SPRING_PROFILES_ACTIVE: 'ci'  # Example environment variable
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set Up Dependencies
-        run: |
-          # Install dependencies if needed
-          echo "Setting up dependencies..."
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'      # Options: 'temurin', 'zulu', etc.
+          java-version: '21'           # Specify your Java version
+          cache: maven                 # Cache Maven dependencies
 
-      - name: Build Project
-        run: |
-          # Replace with your actual build commands
-          echo "Building the project..."
+      - name: Verify Java Version
+        run: java -version
+
+      - name: Build with Maven
+        run: mvn clean install
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: spring-boot-app
+          path: target/*.jar
