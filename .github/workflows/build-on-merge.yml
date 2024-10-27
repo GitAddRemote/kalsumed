@@ -1,0 +1,29 @@
+# .github/workflows/build-on-merge.yml
+
+name: Build on Merge to Main or Feature Branches
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+      - 'feature/**'
+
+jobs:
+  build:
+    if: ${{ github.event.pull_request.merged }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set Up Dependencies
+        run: |
+          # Install dependencies if needed
+          echo "Setting up dependencies..."
+
+      - name: Build Project
+        run: |
+          # Replace with your actual build commands
+          echo "Building the project..."
