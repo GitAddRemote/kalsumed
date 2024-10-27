@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: Kalsumed
+
+---
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/kalsumed-db
+    username: kalsumed-db-user
+    password: d9ds8fdDSF
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
