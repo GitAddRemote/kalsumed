@@ -1,9 +1,12 @@
 package com.presstronic.kalsumed.entity.user;
 
+import com.presstronic.kalsumed.entity.meal.Meal;
 import com.presstronic.kalsumed.entity.role.Role;
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -39,6 +42,9 @@ public class ApplicationUser {
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Meal> meals = new ArrayList<>();
 
     public ApplicationUser() {
         super();
@@ -115,5 +121,13 @@ public class ApplicationUser {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    public List<Meal> getMeals() {
+        return meals;
+    }
+
+    public void setMeals(List<Meal> meals) {
+        this.meals = meals;
     }
 }
