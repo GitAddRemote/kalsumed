@@ -1,0 +1,11 @@
+# docker-compose.override.yml
+version: '3.8'
+services:
+  backend:
+    environment:
+      - NODE_ENV=development
+
+  frontend:
+    environment:
+      - NODE_ENV=development
+
