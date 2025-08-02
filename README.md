@@ -1,10 +1,18 @@
 # Kalsumed
 
-[![CI](https://img.shields.io/github/actions/workflow/status/$GITHUB_USER/$REPO_NAME/ci-cd.yml?branch=$BRANCH)](https://github.com/$GITHUB_USER/$REPO_NAME/actions)
-[![Release](https://img.shields.io/github/v/release/$GITHUB_USER/$REPO_NAME)](https://github.com/$GITHUB_USER/$REPO_NAME/releases)
-[![License](https://img.shields.io/github/license/$GITHUB_USER/$REPO_NAME)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/gitaddremote/kalsumed/ci-cd.yml?branch=main)](https://github.com/gitaddremote/kalsumed/actions)
+[![Release](https://img.shields.io/github/v/release/gitaddremote/kalsumed)](https://github.com/gitaddremote/kalsumed/releases)
+[![License](https://img.shields.io/github/license/gitaddremote/kalsumed)](LICENSE)
 
-Kalsumed is a multi-tenant SaaS platform for weight-loss and nutrition management.
+Kalsumed is a multi-tenant SaaS platform for weight-loss and nutrition management. Designed to track daily food intake and provide users with insights into their caloric consumption. The name is derived from "Kilocalorie Consumed." This project aims to integrate a third-party API for food data and implement AI-driven tooling to assist with food recognition and portion estimation from photos.
+
+### Key Features
+- Daily calorie tracking
+- User-friendly interface for logging meals
+- Planned integrations for:
+  - Food recognition using AI
+  - Portion estimation via photos
+
 
 ## Tech Stack
 
