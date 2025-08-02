@@ -31,6 +31,6 @@ This project is licensed under the [MIT License](./LICENSE), permitting extensiv
 
 ## Contributing
 
-Contributions are welcome! Please submit a pull request or open an issue to report bugs or suggest new features.
+Thanks for your interest. I am not currently accepting outside contributions at this time, but check back in the future.
 
 ---
