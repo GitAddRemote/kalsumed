@@ -1,36 +1,36 @@
 # Kalsumed
 
-Kalsumed is an application designed to track daily food intake and provide users with insights into their caloric consumption. The name is derived from "Kilocalorie Consumed." This project aims to integrate a third-party API for food data and implement AI-driven tooling to assist with food recognition and portion estimation from photos.
+[![CI](https://img.shields.io/github/actions/workflow/status/$GITHUB_USER/$REPO_NAME/ci-cd.yml?branch=$BRANCH)](https://github.com/$GITHUB_USER/$REPO_NAME/actions)
+[![Release](https://img.shields.io/github/v/release/$GITHUB_USER/$REPO_NAME)](https://github.com/$GITHUB_USER/$REPO_NAME/releases)
+[![License](https://img.shields.io/github/license/$GITHUB_USER/$REPO_NAME)](LICENSE)
 
-## Project Overview
+Kalsumed is a multi-tenant SaaS platform for weight-loss and nutrition management.
 
-Kalsumed helps users monitor and log their meals effortlessly. Future updates will bring enhanced functionality with AI assistance to recognize food items and estimate portions accurately, easing the logging process.
+## Tech Stack
 
-### Key Features
-- Daily calorie tracking
-- User-friendly interface for logging meals
-- Planned integrations for:
-  - Food recognition using AI
-  - Portion estimation via photos
+- **Backend:** NestJS, TypeORM, PostgreSQL, Redis, RabbitMQ
+- **Frontend:** React, MUI, Vite
+- **Infrastructure:** Docker, Kubernetes, Terraform, Helm
+- **Observability:** OpenTelemetry, Prometheus, Grafana, Loki, Jaeger
+- **Security:** Vault, Unleash, Traefik
+- **Testing:** Jest, Supertest, Pact, Artillery, OWASP ZAP
 
 ## Getting Started
 
-1. **Clone the repository**:
+1. Install dependencies
    ```bash
-   git clone https://github.com/GitAddRemote/kalsumed.git
+   pnpm install
    ```
-2. **Set up dependencies**:
-   Follow the instructions in the `backend/` and `frontend/` directories to install dependencies.
 
-3. **Run locally**:
-   - Navigate to the project directory and start the backend and frontend servers.
+2. Run locally
+   ```bash
+   pnpm dev
+   ```
 
-## License
-
-This project is licensed under the [MIT License](./LICENSE), permitting extensive freedoms for use, modification, and distribution with minimal restrictions.
+3. View documentation
+   - API → docs/api
+   - Architecture → docs/architecture
 
 ## Contributing
 
-Thanks for your interest. I am not currently accepting outside contributions at this time, but check back in the future.
-
----
+Please see [CONTRIBUTING.md](/CONTRIBUTING.md).
