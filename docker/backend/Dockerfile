@@ -1,29 +1,21 @@
-# docker/backend/Dockerfile
-
-# ---- Build Stage ----
-FROM node:18-alpine AS build
+FROM node:20-alpine AS builder
 WORKDIR /usr/src/app
 
-# Copy only deps for caching
 COPY package.json pnpm-lock.yaml turbo.json pnpm-workspace.yaml ./
-COPY apps/backend/package.json apps/backend/
-RUN corepack enable && corepack prepare pnpm@latest --activate
-RUN pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@latest --activate && pnpm install --frozen-lockfile
 
-# Copy source & build
-COPY . .
+COPY apps/backend/package.json apps/backend/
+COPY apps/backend ./apps/backend
+# remove if you don't use libs
+COPY libs ./libs
+
 RUN pnpm --filter @kalsumed/backend build
 
-# ---- Run Stage ----
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /usr/src/app
-ENV NODE_ENV=production
 
-# Copy built artifacts + deps
-COPY --from=build /usr/src/app/apps/backend/dist ./dist
-COPY --from=build /usr/src/app/node_modules ./node_modules
-COPY apps/backend/package.json ./
+COPY --from=builder /usr/src/app/apps/backend/dist ./dist
+COPY --from=builder /usr/src/app/apps/backend/package.json ./
+COPY --from=builder /usr/src/app/node_modules ./node_modules
 
-EXPOSE 3000
-CMD ["node", "dist/main.js"]
-
+CMD ["node", "dist/main"]

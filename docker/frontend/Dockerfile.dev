@@ -1,0 +1,15 @@
+FROM node:18-alpine
+
+WORKDIR /usr/src/app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Only copy manifest files for faster builds/caching
+COPY package.json pnpm-lock.yaml turbo.json pnpm-workspace.yaml ./
+COPY apps/frontend/package.json apps/frontend/
+COPY apps/frontend/tsconfig.json apps/frontend/
+
+# Default: will install on container start, not build
+
+# Entrypoint: install deps and run Vite dev server
+CMD ["sh", "-c", "pnpm install --filter @kalsumed/frontend... && pnpm --filter @kalsumed/frontend dev"]

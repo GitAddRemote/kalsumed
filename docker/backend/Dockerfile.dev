@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+WORKDIR /usr/src/app
+
+# Enable pnpm with corepack
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy only manifest files and workspace configs for faster build
+COPY package.json pnpm-lock.yaml turbo.json pnpm-workspace.yaml ./
+COPY apps/backend/package.json apps/backend/
+COPY apps/backend/tsconfig.json apps/backend/
+
+# Default: will install on container start, not build
+
+# Entrypoint: install dependencies and run dev server
+CMD ["sh", "-c", "pnpm install --filter @kalsumed/backend... && pnpm --filter @kalsumed/backend dev"]

@@ -137,3 +137,16 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# pnpm
+.pnpm-store/
+.pnpm-debug.log
+.pnpm-global/
+**/node_modules/
+
+# Docker volumes (sometimes get mounted locally by mistake)
+**/docker-volume/
+docker-volume/
+
+# Misc
+.DS_Store
