@@ -4,10 +4,11 @@ services:
       context: .
       dockerfile: docker/backend/Dockerfile.dev
     command: sh -c "pnpm install --filter @kalsumed/backend... && pnpm --filter @kalsumed/backend dev"
-    working_dir: /usr/src/app
+    working_dir: /usr/src/apps/backend
     volumes:
-      - ./:/usr/src/app:cached
-      - backend_node_modules:/usr/src/app/node_modules
+      - ./:/usr/src:cached
+      - backend_node_modules:/usr/src/apps/backend/node_modules
+      - backend_dist:/usr/src/apps/backend/dist
     ports:
       - "3000:3000"
     env_file:
@@ -18,10 +19,10 @@ services:
       context: .
       dockerfile: docker/frontend/Dockerfile.dev
     command: sh -c "pnpm install --filter @kalsumed/frontend... && pnpm --filter @kalsumed/frontend dev"
-    working_dir: /usr/src/app
+    working_dir: /usr/src/apps/frontend
     volumes:
-      - ./:/usr/src/app:cached
-      - frontend_node_modules:/usr/src/app/node_modules
+      - ./:/usr/src:cached
+      - frontend_node_modules:/usr/src/apps/frontend/node_modules
     ports:
       - "5173:5173"
     env_file:
@@ -80,3 +81,4 @@ volumes:
   rabbitmq-data:
   frontend_node_modules:
   backend_node_modules:
+  backend_dist:
