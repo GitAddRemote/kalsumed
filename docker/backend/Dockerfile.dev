@@ -1,22 +1,24 @@
+# 1. base image & workspace root
 FROM node:20-alpine
-WORKDIR /usr/src/apps/backend
+WORKDIR /usr/src
 
-# Enable pnpm with corepack
+# 2. pnpm setup
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy only manifest files and workspace configs for faster build
+# 3. copy monorepo manifests + backend manifest
 COPY package.json pnpm-lock.yaml turbo.json pnpm-workspace.yaml ./
 COPY apps/backend/package.json apps/backend/
 
-# Install dependencies
+# 4. install *all* deps (including @nestjs/cli hoisted into the workspace)
 RUN pnpm install --frozen-lockfile
 
-# Copy app source files
-COPY apps/backend/tsconfig.json apps/backend/
-COPY apps/backend/src apps/backend/src/
+# 5. switch into backend & copy only build-time files
+WORKDIR /usr/src/apps/backend
+COPY apps/backend/tsconfig.json tsconfig.json
+COPY apps/backend/src src/
 
-# Build project
-RUN pnpm --filter @kalsumed/backend run build
+# 6. build
+RUN pnpm run build
 
-# Entrypoint: install dependencies and run dev server
-CMD ["pnpm", "--filter", "@kalsumed/backend", "dev"]
+# 7. dev entrypoint
+CMD ["pnpm", "dev"]

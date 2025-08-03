@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: docker/backend/Dockerfile.dev
-    command: sh -c "pnpm install --filter @kalsumed/backend... && pnpm --filter @kalsumed/backend dev"
+    # command: sh -c "pnpm install --filter @kalsumed/backend... && pnpm --filter @kalsumed/backend dev"
     working_dir: /usr/src/apps/backend
     volumes:
       - ./apps/backend/src:/usr/src/apps/backend/src:delegated
@@ -19,7 +19,7 @@ services:
     build:
       context: .
       dockerfile: docker/frontend/Dockerfile.dev
-    command: sh -c "pnpm install --filter @kalsumed/frontend... && pnpm --filter @kalsumed/frontend dev"
+    # command: sh -c "pnpm install --filter @kalsumed/frontend... && pnpm --filter @kalsumed/frontend dev"
     working_dir: /usr/src/apps/frontend
     volumes:
       - ./apps/frontend/src:/usr/src/apps/frontend/src:delegated
