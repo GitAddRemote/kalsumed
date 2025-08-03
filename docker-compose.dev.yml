@@ -6,7 +6,8 @@ services:
     command: sh -c "pnpm install --filter @kalsumed/backend... && pnpm --filter @kalsumed/backend dev"
     working_dir: /usr/src/apps/backend
     volumes:
-      - ./:/usr/src:cached
+      - ./apps/backend/src:/usr/src/apps/backend/src:delegated
+      - ./apps/backend/tsconfig.json:/usr/src/apps/backend/tsconfig.json:delegated
       - backend_node_modules:/usr/src/apps/backend/node_modules
       - backend_dist:/usr/src/apps/backend/dist
     ports:
@@ -21,7 +22,9 @@ services:
     command: sh -c "pnpm install --filter @kalsumed/frontend... && pnpm --filter @kalsumed/frontend dev"
     working_dir: /usr/src/apps/frontend
     volumes:
-      - ./:/usr/src:cached
+      - ./apps/frontend/src:/usr/src/apps/frontend/src:delegated
+      - ./apps/frontend/tsconfig.json:/usr/src/apps/frontend/tsconfig.json:delegated
+      - ./apps/frontend/public:/usr/src/apps/frontend/public:delegated
       - frontend_node_modules:/usr/src/apps/frontend/node_modules
     ports:
       - "5173:5173"
@@ -54,7 +57,13 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    # Append‐only AOF plus requirepass from env
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - "${REDIS_PASSWORD}"
     env_file:
       - .env.dev
     ports:
