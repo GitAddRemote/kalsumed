@@ -1,0 +1,23 @@
+# apps/gateway/traefik/dynamic/routes.yml
+
+http:
+  routers:
+    api-router:
+      entryPoints:
+        - web
+      rule: "PathPrefix(`/api`)"
+      service: backend
+      middlewares:
+        - strip-api-prefix
+
+  middlewares:
+    strip-api-prefix:
+      stripPrefix:
+        prefixes:
+          - /api
+
+  services:
+    backend:
+      loadBalancer:
+        servers:
+          - url: "http://backend:3000"

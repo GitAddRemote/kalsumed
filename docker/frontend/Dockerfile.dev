@@ -1,0 +1,15 @@
+FROM node:18-alpine
+WORKDIR /usr/src/apps/frontend
+
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy only dependency manifests
+COPY package.json pnpm-lock.yaml turbo.json pnpm-workspace.yaml ./
+COPY apps/frontend/package.json apps/frontend/
+
+# Install all deps (populates node_modules volume)
+RUN pnpm install --frozen-lockfile
+
+# Entrypoint: start Vite in watch/dev mode
+CMD ["pnpm", "--filter", "@kalsumed/frontend", "dev"]

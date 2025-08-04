@@ -1,0 +1,100 @@
+version: "3.8"
+
+services:
+  # -- Infrastructure --
+  database:
+    image: postgres:15-alpine
+    env_file: [ .env.dev ]
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB:       ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    env_file: [ .env.dev ]
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - "${REDIS_PASSWORD}"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    env_file: [ .env.dev ]
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+  # -- Edge / Gateway --
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/gateway/Dockerfile
+    command: [ "traefik" ]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./apps/gateway/traefik/certificates:/certificates
+
+  # -- Backend (NestJS in watch mode) --
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile.dev
+    working_dir: /usr/src/apps/backend
+    depends_on:
+      - database
+      - redis
+      - rabbitmq
+    volumes:
+      # mount your full backend source
+      - ./apps/backend:/usr/src/apps/backend:delegated
+      # but persist build output & deps across restarts
+      - backend_node_modules:/usr/src/apps/backend/node_modules
+      - backend_dist:/usr/src/apps/backend/dist
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.dev
+
+  # -- Frontend (Vite in watch mode) --
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile.dev
+    working_dir: /usr/src/apps/frontend
+    depends_on:
+      - backend
+    volumes:
+      # mount your full frontend source
+      - ./apps/frontend:/usr/src/apps/frontend:delegated
+      # persist deps
+      - frontend_node_modules:/usr/src/apps/frontend/node_modules
+    ports:
+      - "5173:5173"
+    env_file:
+      - .env.dev
+
+volumes:
+  db-data:
+  redis-data:
+  rabbitmq-data:
+  backend_node_modules:
+  backend_dist:
+  frontend_node_modules:

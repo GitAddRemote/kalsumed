@@ -66,7 +66,10 @@ web_modules/
 .yarn-integrity
 
 # dotenv environment variable files
+secrets/*
 .env
+.env.local
+.env.dev.local
 .env.*
 !.env.example
 
@@ -137,3 +140,16 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# pnpm
+.pnpm-store/
+.pnpm-debug.log
+.pnpm-global/
+**/node_modules/
+
+# Docker volumes (sometimes get mounted locally by mistake)
+**/docker-volume/
+docker-volume/
+
+# Misc
+.DS_Store
