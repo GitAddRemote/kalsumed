@@ -38,6 +38,7 @@ jobs:
 
           # Backend
           cp apps/backend/.env.template apps/backend/.env.dev
+          sed -i "s|POSTGRES_HOST=.*|POSTGRES_HOST=postgres|" apps/backend/.env.dev
           sed -i "s|POSTGRES_USER=.*|POSTGRES_USER=${{ secrets.POSTGRES_USER }}|" apps/backend/.env.dev
           sed -i "s|POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}|" apps/backend/.env.dev
           sed -i "s|POSTGRES_DB=.*|POSTGRES_DB=${{ secrets.POSTGRES_DB }}|" apps/backend/.env.dev
@@ -56,19 +57,19 @@ jobs:
 
       - name: Wait for backend health endpoint
         run: |
-          for i in {1..60}; do
+          for i in {1..30}; do
             HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health) || true
             if [ "$HTTP" = "200" ]; then
               echo "✅ Health check passed"
               exit 0
             fi
-            echo "⏳ waiting for health... ($i/60)"
+            echo "⏳ waiting for health... ($i/30)"
             sleep 2
           done
           echo "❌ Health endpoint never became ready"
 
           echo "\n📌 Docker compose logs for debugging:"
-          docker compose -f docker-compose.dev.yml logs backend
+          docker compose -f docker-compose.dev.yml logs backend database
 
           exit 1
 

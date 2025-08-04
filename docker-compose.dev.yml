@@ -10,6 +10,11 @@ services:
       POSTGRES_DB:       ${POSTGRES_DB}
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
       - db-data:/var/lib/postgresql/data
 
@@ -60,9 +65,12 @@ services:
       dockerfile: docker/backend/Dockerfile.dev
     working_dir: /usr/src/apps/backend
     depends_on:
-      - database
-      - redis
-      - rabbitmq
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
     volumes:
       - ./apps/backend:/usr/src/apps/backend:delegated
       - backend_node_modules:/usr/src/apps/backend/node_modules
