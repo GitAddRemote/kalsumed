@@ -1,55 +1,14 @@
+version: "3.8"
+
 services:
-  backend:
-    build:
-      context: .
-      dockerfile: docker/backend/Dockerfile.dev
-    # command: sh -c "pnpm install --filter @kalsumed/backend... && pnpm --filter @kalsumed/backend dev"
-    working_dir: /usr/src/apps/backend
-    volumes:
-      - ./apps/backend/src:/usr/src/apps/backend/src:delegated
-      - ./apps/backend/tsconfig.json:/usr/src/apps/backend/tsconfig.json:delegated
-      - backend_node_modules:/usr/src/apps/backend/node_modules
-      - backend_dist:/usr/src/apps/backend/dist
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env.dev
-
-  frontend:
-    build:
-      context: .
-      dockerfile: docker/frontend/Dockerfile.dev
-    # command: sh -c "pnpm install --filter @kalsumed/frontend... && pnpm --filter @kalsumed/frontend dev"
-    working_dir: /usr/src/apps/frontend
-    volumes:
-      - ./apps/frontend/src:/usr/src/apps/frontend/src:delegated
-      - ./apps/frontend/tsconfig.json:/usr/src/apps/frontend/tsconfig.json:delegated
-      - ./apps/frontend/public:/usr/src/apps/frontend/public:delegated
-      - frontend_node_modules:/usr/src/apps/frontend/node_modules
-    ports:
-      - "5173:5173"
-    env_file:
-      - .env.dev
-
-  gateway:
-    build:
-      context: .
-      dockerfile: docker/gateway/Dockerfile
-    command: traefik
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./apps/gateway/traefik/certificates:/certificates
-
+  # -- Infrastructure --
   database:
     image: postgres:15-alpine
-    env_file:
-      - .env.dev
+    env_file: [ .env.dev ]
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_USER:     ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB:       ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -57,15 +16,13 @@ services:
 
   redis:
     image: redis:7-alpine
-    # Append‐only AOF plus requirepass from env
+    env_file: [ .env.dev ]
     command:
       - redis-server
       - --appendonly
       - "yes"
       - --requirepass
       - "${REDIS_PASSWORD}"
-    env_file:
-      - .env.dev
     ports:
       - "6379:6379"
     volumes:
@@ -73,8 +30,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    env_file:
-      - .env.dev
+    env_file: [ .env.dev ]
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
@@ -84,10 +40,61 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
 
+  # -- Edge / Gateway --
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/gateway/Dockerfile
+    command: [ "traefik" ]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./apps/gateway/traefik/certificates:/certificates
+
+  # -- Backend (NestJS in watch mode) --
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile.dev
+    working_dir: /usr/src/apps/backend
+    depends_on:
+      - database
+      - redis
+      - rabbitmq
+    volumes:
+      # mount your full backend source
+      - ./apps/backend:/usr/src/apps/backend:delegated
+      # but persist build output & deps across restarts
+      - backend_node_modules:/usr/src/apps/backend/node_modules
+      - backend_dist:/usr/src/apps/backend/dist
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.dev
+
+  # -- Frontend (Vite in watch mode) --
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile.dev
+    working_dir: /usr/src/apps/frontend
+    depends_on:
+      - backend
+    volumes:
+      # mount your full frontend source
+      - ./apps/frontend:/usr/src/apps/frontend:delegated
+      # persist deps
+      - frontend_node_modules:/usr/src/apps/frontend/node_modules
+    ports:
+      - "5173:5173"
+    env_file:
+      - .env.dev
+
 volumes:
   db-data:
   redis-data:
   rabbitmq-data:
-  frontend_node_modules:
   backend_node_modules:
   backend_dist:
+  frontend_node_modules:
