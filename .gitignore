@@ -65,13 +65,19 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variable files
-secrets/*
+# Root-level environment files
 .env
+.env.*
 .env.local
 .env.dev.local
-.env.*
-!.env.example
+
+# All project-specific env files
+apps/*/.env
+apps/*/.env.*
+!apps/*/.env.template
+
+# Local secrets
+secrets/*
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
