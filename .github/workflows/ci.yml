@@ -1,4 +1,4 @@
-name: CI - Kalsumed
+name: Build & Health-Check Pipeline
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
         run: corepack enable
 
       - name: Start dev stack
-        run: docker-compose -f docker-compose.dev.yml up -d --build
+        run: docker compose -f docker-compose.dev.yml up -d --build
 
       - name: Wait for backend health endpoint
         run: |
@@ -42,9 +42,9 @@ jobs:
           RESPONSE=$(curl -s http://localhost:3000/api/health)
           echo "$RESPONSE" | jq .
           if ! jq -e '
-            .status    == "ok"                 and
-            .info.database.status == "up"      and
-            .info.redis.status    == "up"
+            .status                    == "ok"               and
+            .info.database.status      == "up"               and
+            .info.redis.status         == "up"
           ' <<<"$RESPONSE"; then
             echo "❌ Health payload did not match expected shape."
             exit 1
@@ -53,4 +53,4 @@ jobs:
 
       - name: Tear down dev stack
         if: always()
-        run: docker-compose -f docker-compose.dev.yml down -v --remove-orphans
+        run: docker compose -f docker-compose.dev.yml down -v --remove-orphans
