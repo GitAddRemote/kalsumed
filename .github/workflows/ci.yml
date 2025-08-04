@@ -1,0 +1,56 @@
+name: CI - Kalsumed
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Enable Corepack (pnpm support)
+        run: corepack enable
+
+      - name: Start dev stack
+        run: docker-compose -f docker-compose.dev.yml up -d --build
+
+      - name: Wait for backend health endpoint
+        run: |
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health) || true
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Backend is up"
+              exit 0
+            fi
+            echo "⏳ Waiting for backend... ($i/30)"
+            sleep 2
+          done
+          echo "❌ Backend did not start in time"
+          exit 1
+
+      - name: Install jq for JSON assertions
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Health check payload validation
+        run: |
+          RESPONSE=$(curl -s http://localhost:3000/api/health)
+          echo "$RESPONSE" | jq .
+          if ! jq -e '
+            .status    == "ok"                 and
+            .info.database.status == "up"      and
+            .info.redis.status    == "up"
+          ' <<<"$RESPONSE"; then
+            echo "❌ Health payload did not match expected shape."
+            exit 1
+          fi
+          echo "✅ Health payload OK"
+
+      - name: Tear down dev stack
+        if: always()
+        run: docker-compose -f docker-compose.dev.yml down -v --remove-orphans
