@@ -20,6 +20,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.6.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -27,18 +32,13 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8.6.0
-
       - name: Generate .env.dev from Secrets
         run: |
-          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}"     > .env.dev
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}"         > .env.dev
           echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env.dev
-          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}"           >> .env.dev
-          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}"     >> .env.dev
-          echo "RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}"       >> .env.dev
+          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}"             >> .env.dev
+          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}"       >> .env.dev
+          echo "RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}"         >> .env.dev
           echo "RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}" >> .env.dev
 
       - name: Build & start dev stack
