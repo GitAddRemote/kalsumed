@@ -32,8 +32,11 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Generate apps/backend/.env.dev from template and Secrets
+      - name: Generate backend and frontend .env.dev from templates and Secrets
         run: |
+          mkdir -p apps/backend apps/frontend
+
+          # Backend
           cp apps/backend/.env.template apps/backend/.env.dev
           sed -i "s|POSTGRES_USER=.*|POSTGRES_USER=${{ secrets.POSTGRES_USER }}|" apps/backend/.env.dev
           sed -i "s|POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}|" apps/backend/.env.dev
@@ -43,6 +46,10 @@ jobs:
           sed -i "s|RABBITMQ_PASSWORD=.*|RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}|" apps/backend/.env.dev
           sed -i "s|JWT_SECRET=.*|JWT_SECRET=${{ secrets.JWT_SECRET }}|" apps/backend/.env.dev
           sed -i "s|NODE_ENV=.*|NODE_ENV=${{ secrets.NODE_ENV }}|" apps/backend/.env.dev
+
+          # Frontend
+          cp apps/frontend/.env.template apps/frontend/.env.dev
+          sed -i "s|VITE_API_BASE_URL=.*|VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}|" apps/frontend/.env.dev
 
       - name: Build & start dev stack
         run: docker compose --env-file apps/backend/.env.dev -f docker-compose.dev.yml up -d --build
