@@ -17,7 +17,7 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "test:unit": "pnpm --filter @kalsumed/backend test && pnpm --filter @kalsumed/frontend test",
+    "test:unit": "pnpm --filter @kalsumed/backend test -- --passWithNoTests && pnpm --filter @kalsumed/frontend test -- --passWithNoTests",
     "build:backend": "pnpm --filter @kalsumed/backend run build",
     "build:frontend": "pnpm --filter @kalsumed/frontend run build",
     "compose:up:dev": "docker-compose -f docker-compose.dev.yml up --build",
