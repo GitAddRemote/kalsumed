@@ -1,3 +1,5 @@
+// apps/backend/src/app.module.ts
+
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -10,9 +12,7 @@ import * as Joi from 'joi';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [
-        path.resolve(__dirname, '..', '.env.dev'),
-      ],
+      envFilePath: [ path.resolve(__dirname, '..', '.env.dev') ],
       validationSchema: Joi.object({
         // Database
         DATABASE_HOST: Joi.string().required(),
@@ -32,7 +32,7 @@ import * as Joi from 'joi';
 
         // Auth & App
         JWT_SECRET: Joi.string().required(),
-        NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+        NODE_ENV: Joi.string().valid('development','production','test').default('development'),
         PORT: Joi.number().default(3000),
       }),
     }),
@@ -42,8 +42,8 @@ import * as Joi from 'joi';
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         type: 'postgres',
-        host: cfg.get<string>('DATABASE_HOST'),
-        port: cfg.get<number>('DATABASE_PORT'),
+        host:     cfg.get<string>('DATABASE_HOST'),
+        port:     cfg.get<number>('DATABASE_PORT'),
         username: cfg.get<string>('DATABASE_USERNAME'),
         password: cfg.get<string>('DATABASE_PASSWORD'),
         database: cfg.get<string>('DATABASE_NAME'),
