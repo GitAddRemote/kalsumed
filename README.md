@@ -1,6 +1,6 @@
 # Kalsumed
 
-[![CI](https://img.shields.io/github/actions/workflow/status/gitaddremote/kalsumed/ci-cd.yml?branch=main)](https://github.com/gitaddremote/kalsumed/actions) [![Release](https://img.shields.io/github/v/release/gitaddremote/kalsumed)](https://github.com/gitaddremote/kalsumed/releases) [![License](https://img.shields.io/github/license/gitaddremote/kalsumed)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/gitaddremote/kalsumed/ci.yml?branch=main)](https://github.com/gitaddremote/kalsumed/actions) [![Release](https://img.shields.io/github/v/release/gitaddremote/kalsumed)](https://github.com/gitaddremote/kalsumed/releases) [![License](https://img.shields.io/github/license/gitaddremote/kalsumed)](LICENSE)
 
 Kalsumed is a multi-tenant SaaS platform for weight-loss and nutrition management. Designed to track daily food intake and provide users with insights into their caloric consumption. The name is derived from "Kilocalorie Consumed." This project integrates third‑party food data and plans to implement AI‑driven tooling to assist with food recognition and portion estimation from photos.
 
