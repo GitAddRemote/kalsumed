@@ -32,7 +32,9 @@ import * as Joi from 'joi';
 
         // Auth & App
         JWT_SECRET: Joi.string().required(),
-        NODE_ENV: Joi.string().valid('development','production','test').default('development'),
+        NODE_ENV: Joi.string()
+          .valid('development','production','test')
+          .default('development'),
         PORT: Joi.number().default(3000),
       }),
     }),
@@ -59,3 +61,4 @@ import * as Joi from 'joi';
   ],
 })
 export class AppModule {}
+
