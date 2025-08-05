@@ -42,9 +42,10 @@ jobs:
           sed -i "s|POSTGRES_USER=.*|POSTGRES_USER=${{ secrets.POSTGRES_USER }}|" apps/backend/.env.dev
           sed -i "s|POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}|" apps/backend/.env.dev
           sed -i "s|POSTGRES_DB=.*|POSTGRES_DB=${{ secrets.POSTGRES_DB }}|" apps/backend/.env.dev
-          sed -i "s|REDIS_PASSWORD=.*|REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}|" apps/backend/.env.dev
+          sed -i "s|DATABASE_HOST=.*|DATABASE_HOST=database|" apps/backend/.env.dev
+          sed -i "s|REDIS_PASSWORD=.*|REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}|" apps/backend/.env.dev        
           sed -i "s|RABBITMQ_USER=.*|RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}|" apps/backend/.env.dev
-          sed -i "s|RABBITMQ_PASSWORD=.*|RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}|" apps/backend/.env.dev
+          sed -i "s|RABBITMQ_PASSWORD=.*|RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}|" apps/backend/.env.dev          
           sed -i "s|JWT_SECRET=.*|JWT_SECRET=${{ secrets.JWT_SECRET }}|" apps/backend/.env.dev
           sed -i "s|NODE_ENV=.*|NODE_ENV=${{ secrets.NODE_ENV }}|" apps/backend/.env.dev
 
