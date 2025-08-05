@@ -30,6 +30,11 @@
     "start:frontend": "serve -s apps/frontend/dist"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
     "rimraf": "^5.0.0",
     "serve": "^14.0.1",
     "source-map-support": "^0.5.21",
