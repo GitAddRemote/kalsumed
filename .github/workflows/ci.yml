@@ -31,9 +31,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run lint
-        run: pnpm lint || (echo "⛔ Lint errors—see above" && exit 1)
-        
+      - name: Lint Backend
+        run: |
+          pnpm --filter @kalsumed/backend run lint
+          
+      - name: Lint Frontend
+        run: |
+          pnpm --filter @kalsumed/frontend run lint
+
       - name: Run unit tests
         run: pnpm test:unit
 
