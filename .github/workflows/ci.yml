@@ -11,8 +11,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint-and-unit:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.6.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Backend
+        run: |
+          pnpm --filter @kalsumed/backend run lint
+          
+      - name: Lint Frontend
+        run: |
+          pnpm --filter @kalsumed/frontend run lint
+
+      - name: Run unit tests
+        run: pnpm test:unit
+
   test:
     name: Build & Health-Check
+    needs: lint-and-unit    
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -29,20 +61,36 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Generate .env.dev from Secrets
+      - name: Generate backend and frontend .env.dev from templates and Secrets
         run: |
-          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}"         > .env.dev
-          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env.dev
-          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}"             >> .env.dev
-          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}"       >> .env.dev
-          echo "RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}"         >> .env.dev
-          echo "RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}" >> .env.dev
+          mkdir -p apps/backend apps/frontend
+
+          # Backend
+          cp apps/backend/.env.template apps/backend/.env.dev
+          sed -i "s|POSTGRES_HOST=.*|POSTGRES_HOST=postgres|" apps/backend/.env.dev
+          sed -i "s|POSTGRES_USER=.*|POSTGRES_USER=${{ secrets.POSTGRES_USER }}|" apps/backend/.env.dev
+          sed -i "s|POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}|" apps/backend/.env.dev
+          sed -i "s|POSTGRES_DB=.*|POSTGRES_DB=${{ secrets.POSTGRES_DB }}|" apps/backend/.env.dev
+          sed -i "s|DATABASE_HOST=.*|DATABASE_HOST=database|" apps/backend/.env.dev
+          sed -i "s|REDIS_PASSWORD=.*|REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}|" apps/backend/.env.dev        
+          sed -i "s|RABBITMQ_USER=.*|RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}|" apps/backend/.env.dev
+          sed -i "s|RABBITMQ_PASSWORD=.*|RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}|" apps/backend/.env.dev          
+          sed -i "s|JWT_SECRET=.*|JWT_SECRET=${{ secrets.JWT_SECRET }}|" apps/backend/.env.dev
+          sed -i "s|NODE_ENV=.*|NODE_ENV=${{ secrets.NODE_ENV }}|" apps/backend/.env.dev
+
+          # Frontend
+          cp apps/frontend/.env.template apps/frontend/.env.dev
+          sed -i "s|VITE_API_BASE_URL=.*|VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}|" apps/frontend/.env.dev
+
+      - name: Dump the backend .env.dev
+        run: |
+          echo "--- apps/backend/.env.dev ---"
+          cat apps/backend/.env.dev
+          echo "-----------------------------"          
 
       - name: Build & start dev stack
-        run: docker compose -f docker-compose.dev.yml up -d --build
+        run: docker compose --env-file apps/backend/.env.dev -f docker-compose.dev.yml up -d --build
 
       - name: Wait for backend health endpoint
         run: |
@@ -58,7 +106,7 @@ jobs:
           echo "❌ Health endpoint never became ready"
 
           echo "\n📌 Docker compose logs for debugging:"
-          docker compose -f docker-compose.dev.yml logs backend
+          docker compose -f docker-compose.dev.yml logs backend database
 
           exit 1
 

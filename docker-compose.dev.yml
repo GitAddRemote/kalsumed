@@ -1,22 +1,27 @@
-version: "3.8"
-
 services:
   # -- Infrastructure --
   database:
     image: postgres:15-alpine
-    env_file: [ .env.dev ]
+    env_file:
+      - ./apps/backend/.env.dev
     environment:
       POSTGRES_USER:     ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB:       ${POSTGRES_DB}
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
       - db-data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
-    env_file: [ .env.dev ]
+    env_file:
+      - ./apps/backend/.env.dev
     command:
       - redis-server
       - --appendonly
@@ -30,7 +35,8 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    env_file: [ .env.dev ]
+    env_file:
+      - ./apps/backend/.env.dev
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
@@ -59,19 +65,20 @@ services:
       dockerfile: docker/backend/Dockerfile.dev
     working_dir: /usr/src/apps/backend
     depends_on:
-      - database
-      - redis
-      - rabbitmq
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
     volumes:
-      # mount your full backend source
       - ./apps/backend:/usr/src/apps/backend:delegated
-      # but persist build output & deps across restarts
       - backend_node_modules:/usr/src/apps/backend/node_modules
       - backend_dist:/usr/src/apps/backend/dist
     ports:
       - "3000:3000"
     env_file:
-      - .env.dev
+      - ./apps/backend/.env.dev
 
   # -- Frontend (Vite in watch mode) --
   frontend:
@@ -82,14 +89,12 @@ services:
     depends_on:
       - backend
     volumes:
-      # mount your full frontend source
       - ./apps/frontend:/usr/src/apps/frontend:delegated
-      # persist deps
       - frontend_node_modules:/usr/src/apps/frontend/node_modules
     ports:
       - "5173:5173"
     env_file:
-      - .env.dev
+      - ./apps/frontend/.env.dev
 
 volumes:
   db-data:
