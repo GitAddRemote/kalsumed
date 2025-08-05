@@ -12,7 +12,8 @@ import * as Joi from 'joi';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [ path.resolve(__dirname, '..', '.env.dev') ],
+      envFilePath: [ path.resolve(process.cwd(), '.env.dev') ],
+      // envFilePath: [ path.resolve(__dirname, '..', '.env.dev') ],
       validationSchema: Joi.object({
         // Database
         DATABASE_HOST: Joi.string().required(),
