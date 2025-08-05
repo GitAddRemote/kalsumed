@@ -90,7 +90,7 @@ jobs:
           echo "-----------------------------"          
 
       - name: Build & start dev stack
-        run: docker compose --env-file apps/backend/.env.dev -f docker-compose.dev.yml up -d --build
+        run: docker compose -f docker-compose.dev.yml up -d --build
 
       - name: Wait for backend health endpoint
         run: |
