@@ -9,7 +9,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   /**
    * Optionally, you can add extra checks here (e.g. request logging)
    */
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+  override canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
     // call AuthGuard('jwt') which will validate the JWT
     return super.canActivate(context);
   }
@@ -17,7 +17,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   /**
    * Override to throw a cleaner exception when authentication fails
    */
-  handleRequest(err: any, user: any, info: any) {
+  override handleRequest(err: any, user: any, info: any) {
     // err is any error thrown by the strategy
     // user is the validated payload (or null)
     // info is additional info (e.g. TokenExpiredError)

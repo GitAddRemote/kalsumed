@@ -12,11 +12,11 @@ import { ConfigService } from '@nestjs/config';
 export interface AppleProfile {
   provider: 'apple';
   id: string;
-  emails?: { value: string }[];
-  name?: { givenName?: string; familyName?: string };
-  accessToken?: string;
-  refreshToken?: string;
-  expiresIn?: number;
+  emails?: { value: string }[] | undefined;
+  name?: { givenName?: string; familyName?: string } | undefined;
+  accessToken?: string | undefined;
+  refreshToken?: string | undefined;
+  expiresIn?: number | undefined;
 }
 
 @Injectable()
@@ -50,15 +50,15 @@ export class AppleStrategy extends PassportStrategy(
     profile: any,
   ): Promise<AppleProfile> {
     return {
-      provider:     'apple',
-      id:           idToken.sub,
-      emails:       idToken.email ? [{ value: idToken.email }] : undefined,
-      name:         profile?.name,
+      provider: "apple" as const,
+      id: profile.id,
+      emails: profile.emails ?? [],
+      name: profile.name,
       accessToken,
       refreshToken,
-      expiresIn:    idToken.exp
-                      ? Math.max(0, idToken.exp * 1000 - Date.now())
-                      : undefined,
+      expiresIn: idToken.exp
+        ? Math.max(0, idToken.exp * 1000 - Date.now())
+        : undefined,
     };
   }
 }

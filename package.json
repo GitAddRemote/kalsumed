@@ -12,7 +12,12 @@
   },
   "license": "MIT",
   "scripts": {
-    "clean": "rimraf .turbo node_modules",
+    "dev": "concurrently \"pnpm --filter @kalsumed/backend run dev\" \"pnpm --filter @kalsumed/frontend run dev\"",
+    "build:all": "pnpm --filter \"@kalsumed/*\" run build",
+    "lint:all": "pnpm --filter \"@kalsumed/*\" run lint",
+    "test:all": "pnpm --filter \"@kalsumed/*\" run test",
+    "clean": "pnpm --filter \"@kalsumed/*\" run clean && rm -rf node_modules/.pnpm",
+    "type-check": "pnpm --filter \"@kalsumed/*\" run type-check",
     "bootstrap": "pnpm install",
     "build": "turbo run build",
     "lint": "turbo run lint",

@@ -25,7 +25,7 @@ export class UserRole {
 
   @ManyToOne('Role', (role: any) => role.userRoles, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'roleId' })
-  role!: import('./role.entity').Role;
+  role!: import('../../role/entities/role.entity').Role;
 
   @CreateDateColumn({ type: 'timestamp with time zone' })
   assignedAt!: Date;

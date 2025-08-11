@@ -50,8 +50,8 @@ export class AuthService {
     const payload = { username: user.username, sub: user.id };
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('jwt.refreshSecret'),
-      expiresIn: this.configService.get<string>('jwt.refreshExpiresIn'),
+      secret: this.configService.getOrThrow<string>('jwt.refreshSecret'),
+      expiresIn: this.configService.getOrThrow<string>('jwt.refreshExpiresIn'),
     });
 
     return { accessToken, refreshToken };
@@ -68,8 +68,8 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('jwt.refreshSecret'),
-      expiresIn: this.configService.get<string>('jwt.refreshExpiresIn'),
+      secret: this.configService.getOrThrow<string>('jwt.refreshSecret'),
+      expiresIn: this.configService.getOrThrow<string>('jwt.refreshExpiresIn'),
     });
 
     return { accessToken, refreshToken };

@@ -5,9 +5,9 @@ services:
     env_file:
       - ./apps/backend/.env.dev
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-kalsumed_db}
+      POSTGRES_USER: ${POSTGRES_USER:-kalsumed}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:

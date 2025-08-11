@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { UserService } from '../../user/user.service';
-import { OAuthAccount } from '../../../entities/oauth-account.entity';
+import { OAuthAccount } from '../entities/oauth-account.entity';
 
 interface SocialProfile {
   provider: string;
@@ -56,16 +56,25 @@ export class OAuthService {
         user = await this.userService.createLocal(username, email ?? '', randomHash);
       }
       // Persist OAuthAccount
-      const oa = this.oauthRepo.create({
+      const { accessToken, refreshToken, expiresIn } = profile;
+      const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
+      const oauthData: Partial<OAuthAccount> = {
         user,
         provider,
         providerUserId,
-        accessToken: profile.accessToken,
-        refreshToken: profile.refreshToken,
-        expiresAt: profile.expiresIn
-          ? new Date(Date.now() + profile.expiresIn * 1000)
-          : undefined,
-      });
+      };
+      // Only assign properties that have actual values
+      if (accessToken) {
+        oauthData.accessToken = accessToken;
+      }
+      if (refreshToken) {
+        oauthData.refreshToken = refreshToken;
+      }
+      if (expiresAt) {
+        oauthData.expiresAt = expiresAt;
+      }
+
+      const oa = this.oauthRepo.create(oauthData);
       await this.oauthRepo.save(oa);
     }
 

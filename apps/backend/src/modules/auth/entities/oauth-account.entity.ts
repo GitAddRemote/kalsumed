@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
-import { User } from './user.entity';
+import { User } from '../../user/entities/user.entity';
 
 @Entity('oauth_accounts')
 @Index(['provider', 'providerUserId'], { unique: true })

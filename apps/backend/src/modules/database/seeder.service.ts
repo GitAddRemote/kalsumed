@@ -1,8 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
-import { Role } from '../../entities/role.entity';
-import { User } from '../../entities/user.entity';
-import { UserRole } from '../../entities/user-role.entity';
+import { Role } from '../role/entities/role.entity';
+import { User } from '../user/entities/user.entity';
+import { UserRole } from '../user/entities/user-role.entity';
 
 @Injectable()
 export class SeederService implements OnModuleInit {

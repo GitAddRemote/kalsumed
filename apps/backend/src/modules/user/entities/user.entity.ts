@@ -13,7 +13,7 @@ import {
   Index,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { OAuthAccount } from './oauth-account.entity';
+import { OAuthAccount } from '../../auth/entities/oauth-account.entity';
 
 @Entity('users')
 @Index(['username'], { unique: true })
@@ -78,7 +78,7 @@ export class User {
 
   @OneToMany('UserRole', (ur: any) => ur.user, { cascade: true })
   userRoles!: import('./user-role.entity').UserRole[];
-  
+
   @OneToMany(() => OAuthAccount, (oa) => oa.user, { cascade: true })
   oauthAccounts!: OAuthAccount[];
 
@@ -94,7 +94,7 @@ export class User {
   @DeleteDateColumn({ type: 'timestamp with time zone' })
   deletedAt?: Date;
 
-  get roles(): import('./role.entity').Role[] {
+  get roles(): import('../../role/entities/role.entity').Role[] {
     return (this.userRoles || []).map((ur) => ur.role).filter(Boolean) as any;
   }
 
@@ -107,4 +107,4 @@ export class User {
   }
 }
 
-import type { Role } from './role.entity';
+import type { Role } from '../../role/entities/role.entity';

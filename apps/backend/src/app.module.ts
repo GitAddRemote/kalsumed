@@ -56,19 +56,19 @@ import { OAuthModule } from './modules/auth/oauth/oauth.module';
     // --- TypeORM (Postgres) ---
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
-        type: 'postgres',
-        host: cfg.get<string>('DATABASE_HOST'),
-        port: cfg.get<number>('DATABASE_PORT'),
-        username: cfg.get<string>('DATABASE_USERNAME'),
-        password: cfg.get<string>('DATABASE_PASSWORD'),
-        database: cfg.get<string>('DATABASE_NAME'),
+        type: 'postgres' as const,
+        host: cfg.getOrThrow<string>('DATABASE_HOST'),
+        port: cfg.getOrThrow<number>('DATABASE_PORT'),
+        username: cfg.getOrThrow<string>('DATABASE_USERNAME'),
+        password: cfg.getOrThrow<string>('DATABASE_PASSWORD'),
+        database: cfg.getOrThrow<string>('DATABASE_NAME'),
         autoLoadEntities: true,
         synchronize: false,
         retryAttempts: 10,
         retryDelay: 2000,
       }),
+      inject: [ConfigService],
     }),
 
     // --- Other modules ---

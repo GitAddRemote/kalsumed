@@ -21,7 +21,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Request } from 'express';
 import * as bcrypt from 'bcrypt';
-import { User } from '../../entities/user.entity';
+import { User } from './entities/user.entity';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')

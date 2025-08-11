@@ -50,7 +50,10 @@ module.exports = {
 
   rules: {
     // Example overrides—you can customize these
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/explicit-function-return-type': 'warn',
+    '@typescript-eslint/prefer-nullish-coalescing': 'error',
+    '@typescript-eslint/prefer-optional-chain': 'error',
     'import/order': ['error', { 'newlines-between': 'always' }],
   },
 };
