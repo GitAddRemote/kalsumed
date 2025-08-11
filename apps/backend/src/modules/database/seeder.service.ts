@@ -3,6 +3,7 @@ import { DataSource, Repository } from 'typeorm';
 import { Role } from '../role/entities/role.entity';
 import { User } from '../user/entities/user.entity';
 import { UserRole } from '../user/entities/user-role.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class SeederService implements OnModuleInit {
@@ -33,10 +34,34 @@ export class SeederService implements OnModuleInit {
     }
 
     const initialRoles: Partial<Role>[] = [
-      { name: 'user', description: 'Basic food tracking user', isPremium: false, permissions: ['track_food', 'view_progress'] },
-      { name: 'premium_user', description: 'Premium features enabled', isPremium: true, permissions: ['track_food', 'view_progress', 'ai_insights', 'advanced_analytics'] },
-      { name: 'nutritionist', description: 'Professional nutritionist', isPremium: true, permissions: ['view_client_data', 'create_meal_plans', 'export_reports'] },
-      { name: 'org_admin', description: 'Organization administrator', isPremium: true, permissions: ['manage_organization', 'view_all_users', 'billing'] },
+      { 
+        name: 'user', 
+        description: 'Basic food tracking user', 
+        isPremium: false, 
+        permissions: ['track_food', 'view_progress'],
+        isActive: true
+      },
+      { 
+        name: 'premium_user', 
+        description: 'Premium features enabled', 
+        isPremium: true, 
+        permissions: ['track_food', 'view_progress', 'ai_insights', 'advanced_analytics'],
+        isActive: true
+      },
+      { 
+        name: 'nutritionist', 
+        description: 'Professional nutritionist', 
+        isPremium: true, 
+        permissions: ['view_client_data', 'create_meal_plans', 'export_reports'],
+        isActive: true
+      },
+      { 
+        name: 'org_admin', 
+        description: 'Organization administrator', 
+        isPremium: true, 
+        permissions: ['manage_organization', 'view_all_users', 'billing'],
+        isActive: true
+      },
     ];
 
     await this.roleRepository.save(initialRoles);
@@ -44,7 +69,8 @@ export class SeederService implements OnModuleInit {
   }
 
   private async seedDefaultAdmin() {
-    const adminExists = await this.userRepository.findOne({ where: { username: 'admin' } });
+    // Check if admin exists using email
+    const adminExists = await this.userRepository.findOne({ where: { email: 'admin@kalsumed.com' } });
     if (adminExists) {
       this.logger.log('Admin user already exists, skipping');
       return;
@@ -56,18 +82,22 @@ export class SeederService implements OnModuleInit {
       return;
     }
 
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+
     const adminUser = this.userRepository.create({
-      username: 'admin',
+      username: 'admin',           // ✅ Add this required field
       email: 'admin@kalsumed.com',
-      passwordHash: 'admin123', // Will be hashed by entity hook
+      passwordHash: hashedPassword,
       emailVerified: true,
+      // Add any other required fields from your User entity
     });
     await this.userRepository.save(adminUser);
 
-    await this.userRoleRepository.save({
-      userId: adminUser.id,
-      roleId: adminRole.id,
+    const userRole = this.userRoleRepository.create({
+      user: adminUser,
+      role: adminRole,
     });
+    await this.userRoleRepository.save(userRole);
 
     this.logger.log('Default admin user created');
   }

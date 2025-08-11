@@ -17,7 +17,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
   database: getEnvVar('DATABASE_NAME'),
   autoLoadEntities: true, // This will auto-discover entities in modules
   synchronize: false,
-  migrations: ['dist/migrations/*.js'],
+  migrations: ['dist/src/migrations/*.js'],
   migrationsRun: false,
   logging: true,
 };
