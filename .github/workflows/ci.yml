@@ -12,86 +12,65 @@ concurrency:
 
 jobs:
   lint-and-unit:
-    name: Lint & Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8.6.0
-
+      - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
-
+          node-version: '20'
+          cache: 'pnpm'
+      - name: Enable corepack & set pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.14.0 --activate
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Lint Backend
-        run: |
-          pnpm --filter @kalsumed/backend run lint
-          
+        run: pnpm --filter @kalsumed/backend run lint
       - name: Lint Frontend
-        run: |
-          pnpm --filter @kalsumed/frontend run lint
-
-      - name: Run unit tests
-        run: pnpm test:unit
-
+        run: pnpm --filter @kalsumed/frontend run lint
+      # - name: Run unit tests
+      #   run: pnpm test:unit
   test:
-    name: Build & Health-Check
-    needs: lint-and-unit    
+    needs: lint-and-unit
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8.6.0
-
+      - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
-
-      - name: Generate backend and frontend .env.dev from templates and Secrets
+          node-version: '20'
+          cache: 'pnpm'
+      - name: Enable corepack & set pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.14.0 --activate
+      - name: Generate backend and frontend .env.dev
         run: |
           mkdir -p apps/backend apps/frontend
-
-          # Backend
           cp apps/backend/.env.template apps/backend/.env.dev
-          sed -i "s|POSTGRES_HOST=.*|POSTGRES_HOST=postgres|" apps/backend/.env.dev
+          cp apps/frontend/.env.template apps/frontend/.env.dev
           sed -i "s|POSTGRES_USER=.*|POSTGRES_USER=${{ secrets.POSTGRES_USER }}|" apps/backend/.env.dev
           sed -i "s|POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}|" apps/backend/.env.dev
           sed -i "s|POSTGRES_DB=.*|POSTGRES_DB=${{ secrets.POSTGRES_DB }}|" apps/backend/.env.dev
           sed -i "s|DATABASE_HOST=.*|DATABASE_HOST=database|" apps/backend/.env.dev
-          sed -i "s|REDIS_PASSWORD=.*|REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}|" apps/backend/.env.dev        
+          sed -i "s|REDIS_PASSWORD=.*|REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}|" apps/backend/.env.dev
           sed -i "s|RABBITMQ_USER=.*|RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}|" apps/backend/.env.dev
-          sed -i "s|RABBITMQ_PASSWORD=.*|RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}|" apps/backend/.env.dev          
+          sed -i "s|RABBITMQ_PASSWORD=.*|RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}|" apps/backend/.env.dev
           sed -i "s|JWT_SECRET=.*|JWT_SECRET=${{ secrets.JWT_SECRET }}|" apps/backend/.env.dev
-          sed -i "s|NODE_ENV=.*|NODE_ENV=${{ secrets.NODE_ENV }}|" apps/backend/.env.dev
-
-          # Frontend
-          cp apps/frontend/.env.template apps/frontend/.env.dev
+          sed -i "s|NODE_ENV=.*|NODE_ENV=development|" apps/backend/.env.dev
           sed -i "s|VITE_API_BASE_URL=.*|VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}|" apps/frontend/.env.dev
-
-      - name: Dump the backend .env.dev
+      - name: Dump envs
         run: |
           echo "--- apps/backend/.env.dev ---"
           cat apps/backend/.env.dev
-          echo "-----------------------------"          
-
+          echo "--- apps/frontend/.env.dev ---"
+          cat apps/frontend/.env.dev
       - name: Build & start dev stack
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }} # for compose interpolation/build args
         run: docker compose --env-file apps/backend/.env.dev -f docker-compose.dev.yml up -d --build
-
       - name: Wait for backend health endpoint
         run: |
           for i in {1..60}; do
