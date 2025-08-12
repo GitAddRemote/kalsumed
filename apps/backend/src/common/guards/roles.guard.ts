@@ -7,31 +7,42 @@ import {
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
+// Type guard function (like instanceof in Java)
+function isUserWithRoles(
+  user: any,
+): user is { userRoles: Array<{ role: { name: string } }> } {
+  return (
+    user &&
+    Array.isArray(user.userRoles) &&
+    user.userRoles.every((ur) => ur.role && typeof ur.role.name === 'string')
+  );
+}
+
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(private readonly _reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    // Get required roles set by @Roles() on handler or controller
-    const requiredRoles = this.reflector.get<string[]>(
+    const requiredRoles = this._reflector.get<string[]>(
       ROLES_KEY,
       context.getHandler(),
     );
+
     if (!requiredRoles || requiredRoles.length === 0) {
-      // No roles metadata means public or already protected by another guard
       return true;
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user as any;
+    const user = request.user; // No cast!
 
-    if (!user || !Array.isArray(user.roles)) {
+    // Runtime type checking (like instanceof)
+    if (!isUserWithRoles(user)) {
       throw new ForbiddenException('User has no roles assigned');
     }
 
-    const hasRole = requiredRoles.some((role) =>
-      user.roles.includes(role),
-    );
+    // Now TypeScript knows the shape of user
+    const userRoleNames = user.userRoles.map((ur) => ur.role.name);
+    const hasRole = requiredRoles.some((role) => userRoleNames.includes(role));
 
     if (!hasRole) {
       throw new ForbiddenException(

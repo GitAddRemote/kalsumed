@@ -8,9 +8,9 @@ import { LoginDto } from './dto/login.dto';
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly usersService: UserService,
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    private readonly _usersService: UserService,
+    private readonly _jwtService: JwtService,
+    private readonly _configService: ConfigService,
   ) {}
 
   /**
@@ -23,7 +23,7 @@ export class AuthService {
     username: string,
     password: string,
   ): Promise<{ id: string; username: string; passwordHash: string } | null> {
-    const user = await this.usersService.findByUsername(username);
+    const user = await this._usersService.findByUsername(username);
     if (user && user.passwordHash) {
       const isMatch = await bcrypt.compare(password, user.passwordHash);
       if (isMatch) {
@@ -48,10 +48,10 @@ export class AuthService {
     }
 
     const payload = { username: user.username, sub: user.id };
-    const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.getOrThrow<string>('jwt.refreshSecret'),
-      expiresIn: this.configService.getOrThrow<string>('jwt.refreshExpiresIn'),
+    const accessToken = this._jwtService.sign(payload);
+    const refreshToken = this._jwtService.sign(payload, {
+      secret: this._configService.getOrThrow<string>('jwt.refreshSecret'),
+      expiresIn: this._configService.getOrThrow<string>('jwt.refreshExpiresIn'),
     });
 
     return { accessToken, refreshToken };
@@ -66,10 +66,10 @@ export class AuthService {
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const payload = { username: user.username, sub: user.userId };
 
-    const accessToken = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.getOrThrow<string>('jwt.refreshSecret'),
-      expiresIn: this.configService.getOrThrow<string>('jwt.refreshExpiresIn'),
+    const accessToken = this._jwtService.sign(payload);
+    const refreshToken = this._jwtService.sign(payload, {
+      secret: this._configService.getOrThrow<string>('jwt.refreshSecret'),
+      expiresIn: this._configService.getOrThrow<string>('jwt.refreshExpiresIn'),
     });
 
     return { accessToken, refreshToken };

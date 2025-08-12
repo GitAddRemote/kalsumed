@@ -8,11 +8,9 @@ import { runMigrations } from './utils/migration.util';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   try {
-    // 🚨 THIS MUST RUN FIRST - BEFORE NestFactory.create()
     logger.log('Starting application bootstrap...');
     await runMigrations();
     
-    // Create app AFTER migrations
     logger.log('Creating NestJS application...');
     const app = await NestFactory.create(AppModule);
 
@@ -28,7 +26,7 @@ async function bootstrap() {
     app.setGlobalPrefix('api');
     app.enableCors();
 
-    const port = process.env.PORT || 3000;
+    const port = process.env.PORT ?? 3000;
     await app.listen(port);
     logger.log(`🚀 Backend running on http://localhost:${port}/api`);
   }
@@ -39,5 +37,5 @@ async function bootstrap() {
   }
 }
 
-bootstrap();
+void bootstrap();
 

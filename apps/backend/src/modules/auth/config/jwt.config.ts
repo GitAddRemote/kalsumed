@@ -12,9 +12,9 @@ export const jwtConfig = registerAs(
   'jwt',
   (): JwtConfigShape => ({
     accessSecret: process.env.JWT_ACCESS_SECRET!,
-    accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '3600s',
+    accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '3600s',
     refreshSecret: process.env.JWT_REFRESH_SECRET!,
-    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
   }),
 );
 

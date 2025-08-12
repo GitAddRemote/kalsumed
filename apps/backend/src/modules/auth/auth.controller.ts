@@ -15,13 +15,13 @@ import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly _authService: AuthService) {}
 
   /** Public login endpoint */
   @Post('login')
   @HttpCode(200)
   async login(@Body() credentials: LoginDto) {
-    return this.authService.login(credentials);
+    return this._authService.login(credentials);
   }
 
   /** Protected refresh endpoint */
@@ -31,6 +31,6 @@ export class AuthController {
   async refresh(
     @Req() req: Request & { user: { userId: string; username: string } },
   ) {
-    return this.authService.refresh(req.user);
+    return this._authService.refresh(req.user);
   }
 }

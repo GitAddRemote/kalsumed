@@ -7,8 +7,8 @@ export async function runMigrations(): Promise<void> {
   try {
     logger.log('Running database migrations...');
     
-    const host = process.env.DATABASE_HOST || 'localhost';
-    const port = parseInt(process.env.DATABASE_PORT || '5432');
+    const host = process.env.DATABASE_HOST ?? 'localhost'; // ✅ Changed || to ??
+    const port = parseInt(process.env.DATABASE_PORT ?? '5432'); // ✅ Changed || to ??
     const username = process.env.DATABASE_USERNAME;
     const password = process.env.DATABASE_PASSWORD;
     const database = process.env.DATABASE_NAME;
@@ -25,7 +25,7 @@ export async function runMigrations(): Promise<void> {
       password,
       database,
       entities: ['dist/**/*.entity.js'],
-      migrations: ['dist/src/migrations/*.js'], // ✅ Correct path
+      migrations: ['dist/src/migrations/*.js'],
       synchronize: false,
       logging: false,
     });
