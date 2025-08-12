@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { Role } from '../role/entities/role.entity';
 import { UserRole } from '../user/entities/user-role.entity';

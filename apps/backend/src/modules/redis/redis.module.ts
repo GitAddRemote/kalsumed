@@ -7,7 +7,7 @@ import { REDIS_CLIENT, type RedisClient } from './redis.tokens';
 const redisClientProvider = {
   provide: REDIS_CLIENT,
   useFactory: async (config: ConfigService): Promise<RedisClient> => {
-    const logger = new Logger('RedisClient'); // ✅ Add logger
+    const logger = new Logger('RedisClient');
     const url =
       config.get<string>('REDIS_URL') ??
       `redis://${config.get<string>('REDIS_HOST', 'redis')}:${config.get<number>('REDIS_PORT', 6379)}`;
@@ -17,7 +17,7 @@ const redisClientProvider = {
       socket: { reconnectStrategy: (retries) => Math.min(5000, retries * 100) },
     });
 
-    client.on('error', (err) => logger.error('[redis] client error:', err)); // ✅ Use logger instead of console
+    client.on('error', (err) => logger.error('[redis] client error:', err));
     await client.connect();
     return client;
   },
@@ -34,7 +34,7 @@ const redisClientProvider = {
       provide: 'REDIS_SHUTDOWN_HOOK',
       useFactory: (client: RedisClient) =>
         new (class implements OnApplicationShutdown {
-          private readonly logger = new Logger('RedisShutdown'); // ✅ Add logger
+          private readonly logger = new Logger('RedisShutdown');
           private shuttingDown = false;
 
           async onApplicationShutdown(): Promise<void> {
@@ -49,15 +49,15 @@ const redisClientProvider = {
               await Promise.race([
                 quit,
                 new Promise((_, reject) =>
-                  setTimeout(() => reject(new Error('Redis quit timed out')), timeoutMs),
+                  global.setTimeout(() => reject(new Error('Redis quit timed out')), timeoutMs), // ✅ Use global.setTimeout
                 ),
               ]);
             } catch (err) {
-              this.logger.warn('[redis] graceful quit failed, forcing disconnect:', err); // ✅ Use logger
+              this.logger.warn('[redis] graceful quit failed, forcing disconnect:', err);
               try {
-                await client.disconnect(); // ✅ Add await to fix floating promise
+                await client.disconnect();
               } catch (disconnectErr) {
-                this.logger.error('[redis] force disconnect failed:', disconnectErr); // ✅ Use logger
+                this.logger.error('[redis] force disconnect failed:', disconnectErr);
               }
             }
           }
