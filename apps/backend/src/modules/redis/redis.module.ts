@@ -1,4 +1,4 @@
-import { Global, Module, OnApplicationShutdown } from '@nestjs/common';
+import { Global, Module, OnApplicationShutdown, Logger } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { createClient } from 'redis';
 import { RedisService } from './redis.service';
@@ -7,6 +7,7 @@ import { REDIS_CLIENT, type RedisClient } from './redis.tokens';
 const redisClientProvider = {
   provide: REDIS_CLIENT,
   useFactory: async (config: ConfigService): Promise<RedisClient> => {
+    const logger = new Logger('RedisClient'); // ✅ Add logger
     const url =
       config.get<string>('REDIS_URL') ??
       `redis://${config.get<string>('REDIS_HOST', 'redis')}:${config.get<number>('REDIS_PORT', 6379)}`;
@@ -16,7 +17,7 @@ const redisClientProvider = {
       socket: { reconnectStrategy: (retries) => Math.min(5000, retries * 100) },
     });
 
-    client.on('error', (err) => console.error('[redis] client error:', err));
+    client.on('error', (err) => logger.error('[redis] client error:', err)); // ✅ Use logger instead of console
     await client.connect();
     return client;
   },
@@ -33,9 +34,10 @@ const redisClientProvider = {
       provide: 'REDIS_SHUTDOWN_HOOK',
       useFactory: (client: RedisClient) =>
         new (class implements OnApplicationShutdown {
+          private readonly logger = new Logger('RedisShutdown'); // ✅ Add logger
           private shuttingDown = false;
 
-          async onApplicationShutdown() {
+          async onApplicationShutdown(): Promise<void> {
             if (this.shuttingDown) return;
             this.shuttingDown = true;
 
@@ -51,11 +53,11 @@ const redisClientProvider = {
                 ),
               ]);
             } catch (err) {
-              console.warn('[redis] graceful quit failed, forcing disconnect:', err);
+              this.logger.warn('[redis] graceful quit failed, forcing disconnect:', err); // ✅ Use logger
               try {
-                client.disconnect();
+                await client.disconnect(); // ✅ Add await to fix floating promise
               } catch (disconnectErr) {
-                console.error('[redis] force disconnect failed:', disconnectErr);
+                this.logger.error('[redis] force disconnect failed:', disconnectErr); // ✅ Use logger
               }
             }
           }
