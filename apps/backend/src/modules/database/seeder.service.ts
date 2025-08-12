@@ -69,7 +69,6 @@ export class SeederService implements OnModuleInit {
   }
 
   private async seedDefaultAdmin() {
-    // Check if admin exists using email
     const adminExists = await this.userRepository.findOne({ where: { email: 'admin@kalsumed.com' } });
     if (adminExists) {
       this.logger.log('Admin user already exists, skipping');
@@ -85,11 +84,10 @@ export class SeederService implements OnModuleInit {
     const hashedPassword = await bcrypt.hash('admin123', 10);
 
     const adminUser = this.userRepository.create({
-      username: 'admin',           // ✅ Add this required field
+      username: 'admin',
       email: 'admin@kalsumed.com',
       passwordHash: hashedPassword,
       emailVerified: true,
-      // Add any other required fields from your User entity
     });
     await this.userRepository.save(adminUser);
 
