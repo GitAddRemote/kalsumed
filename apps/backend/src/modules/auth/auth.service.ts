@@ -4,13 +4,14 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { LoginDto } from './dto/login.dto';
+import { User } from '../user/entities/user.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly _usersService: UserService,
-    private readonly _jwtService: JwtService,
-    private readonly _configService: ConfigService,
+    private readonly usersService: UserService,     // ✅ Remove underscore
+    private readonly jwtService: JwtService,        // ✅ Remove underscore  
+    private readonly configService: ConfigService, // ✅ Remove underscore
   ) {}
 
   /**
@@ -22,13 +23,14 @@ export class AuthService {
   private async validateUser(
     username: string,
     password: string,
-  ): Promise<{ id: string; username: string; passwordHash: string } | null> {
-    const user = await this._usersService.findByUsername(username);
-    if (user && user.passwordHash) {
+  ) {
+    // TypeScript will infer the correct type based on what's actually returned
+    const user = await this.usersService.findByUsername(username);
+    if (user?.passwordHash) {
       const isMatch = await bcrypt.compare(password, user.passwordHash);
       if (isMatch) {
-        const { passwordHash, ...result } = user;
-        return result as any;
+        const { passwordHash: _, ...result } = user;
+        return result;
       }
     }
     return null;
@@ -38,9 +40,7 @@ export class AuthService {
    * Login with credentials and receive access & refresh tokens
    * @param loginDto - Contains username and password
    */
-  async login(
-    loginDto: LoginDto,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async login(loginDto: LoginDto): Promise<{ accessToken: string; refreshToken: string }> {
     const { username, password } = loginDto;
     const user = await this.validateUser(username, password);
     if (!user) {
@@ -48,10 +48,10 @@ export class AuthService {
     }
 
     const payload = { username: user.username, sub: user.id };
-    const accessToken = this._jwtService.sign(payload);
-    const refreshToken = this._jwtService.sign(payload, {
-      secret: this._configService.getOrThrow<string>('jwt.refreshSecret'),
-      expiresIn: this._configService.getOrThrow<string>('jwt.refreshExpiresIn'),
+    const accessToken = this.jwtService.sign(payload);                    // ✅ Update usage
+    const refreshToken = this.jwtService.sign(payload, {                  // ✅ Update usage
+      secret: this.configService.getOrThrow<string>('jwt.refreshSecret'), // ✅ Update usage
+      expiresIn: this.configService.getOrThrow<string>('jwt.refreshExpiresIn'), // ✅ Update usage
     });
 
     return { accessToken, refreshToken };
@@ -61,15 +61,13 @@ export class AuthService {
    * Refresh tokens using a valid JWT payload
    * @param user - The decoded JWT payload from the request
    */
-  async refresh(
-    user: { userId: string; username: string },
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async refresh(user: { userId: string; username: string }): Promise<{ accessToken: string; refreshToken: string }> {
     const payload = { username: user.username, sub: user.userId };
 
-    const accessToken = this._jwtService.sign(payload);
-    const refreshToken = this._jwtService.sign(payload, {
-      secret: this._configService.getOrThrow<string>('jwt.refreshSecret'),
-      expiresIn: this._configService.getOrThrow<string>('jwt.refreshExpiresIn'),
+    const accessToken = this.jwtService.sign(payload);                    // ✅ Update usage
+    const refreshToken = this.jwtService.sign(payload, {                  // ✅ Update usage
+      secret: this.configService.getOrThrow<string>('jwt.refreshSecret'), // ✅ Update usage
+      expiresIn: this.configService.getOrThrow<string>('jwt.refreshExpiresIn'), // ✅ Update usage
     });
 
     return { accessToken, refreshToken };

@@ -26,8 +26,14 @@ export class UserRepository {
     return this.repo.findOne({ where: { id } });
   }
 
-  findByUsername(username: string): Promise<User | null> {
-    return this.repo.findOne({ where: { username } });
+  async findByUsername(username: string): Promise<User | null> {
+    return this.repo.findOne({
+      where: [
+        { username },
+        { email: username }
+      ],
+      relations: ['userRoles', 'userRoles.role'] // ✅ Add this to load roles
+    });
   }
 
   findByEmail(email: string): Promise<User | null> {
