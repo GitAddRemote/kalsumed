@@ -1,33 +1,28 @@
 // apps/backend/src/modules/auth/token/token.module.ts
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigType } from '@nestjs/config';
-import { jwtConfig } from '../config/jwt.config';
-import { TokenService } from './token.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TokenController } from './token.controller';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
+import { TokenService } from './token.service';
+import { AuthModule } from '../auth.module';
 
 @Module({
   imports: [
-    // load our jwt namespace, typed + validated
-    ConfigModule.forFeature(jwtConfig),
-    // configure Passport-JWT via JwtModule
+    AuthModule,
+    ConfigModule,
     JwtModule.registerAsync({
-      imports: [ConfigModule.forFeature(jwtConfig)],
-      inject: [jwtConfig.KEY],
-      useFactory: (cfg: ConfigType<typeof jwtConfig>) => ({
-        secret: cfg.accessSecret,
-        signOptions: { expiresIn: cfg.accessExpiresIn },
+      imports: [ConfigModule],
+      useFactory: async (config: ConfigService) => ({
+        secret: config.getOrThrow<string>('jwt.accessSecret'),         // ✅ Use correct key
+        signOptions: { 
+          expiresIn: config.get<string>('jwt.accessExpiresIn') ?? '15m' // ✅ Use correct key
+        },
       }),
+      inject: [ConfigService],
     }),
   ],
-  providers: [
-    TokenService,
-    JwtStrategy,
-    RefreshTokenStrategy,
-  ],
   controllers: [TokenController],
+  providers: [TokenService],
   exports: [TokenService],
 })
 export class TokenModule {}

@@ -8,7 +8,7 @@ type JwtConfigShape = {
   refreshExpiresIn: string;
 };
 
-export const jwtConfig = registerAs(
+const jwtConfig = registerAs(
   'jwt',
   (): JwtConfigShape => ({
     accessSecret: process.env.JWT_ACCESS_SECRET!,
@@ -27,3 +27,5 @@ export const jwtConfigValidationSchema = Joi.object({
 
 // Export type for use in other files if needed
 export type JwtConfigType = JwtConfigShape;
+
+export default jwtConfig;

@@ -10,7 +10,7 @@ import { SessionModule } from './modules/auth/session/session.module';
 import { TokenModule } from './modules/auth/token/token.module';
 import * as path from 'path';
 import * as Joi from 'joi';
-import { jwtConfig, jwtConfigValidationSchema } from './modules/auth/config/jwt.config';
+import jwtConfig, { jwtConfigValidationSchema } from './modules/auth/config/jwt.config';
 import { OAuthModule } from './modules/auth/oauth/oauth.module';
 
 @Module({
