@@ -12,6 +12,18 @@ export default [
         project: './tsconfig.json',
         tsconfigRootDir: import.meta.dirname,
       },
+      globals: {
+        // ✅ Node.js globals
+        process: 'readonly',
+        Buffer: 'readonly',
+        console: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        global: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        exports: 'readonly',
+      },
     },
     plugins: {
       '@typescript-eslint': typescript,
