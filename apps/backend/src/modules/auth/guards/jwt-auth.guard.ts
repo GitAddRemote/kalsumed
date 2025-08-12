@@ -34,9 +34,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   override handleRequest<TUser = JwtPayload>(
     err: Error | null,
     user: JwtPayload | null,
-    info: AuthInfo | null,
-    context: ExecutionContext,
-    status?: number,
+    _info: AuthInfo | null,
+    _context: ExecutionContext,
+    _status?: number,
   ): TUser {
     if (err) {
       throw err;
