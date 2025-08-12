@@ -8,11 +8,11 @@ export class RoleRepository {
   private repo!: Repository<Role>;
   private userRoleRepo!: Repository<UserRole>;
 
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(private readonly _dataSource: DataSource) {}
 
   onModuleInit() {
-    this.repo = this.dataSource.getRepository(Role);
-    this.userRoleRepo = this.dataSource.getRepository(UserRole);
+    this.repo = this._dataSource.getRepository(Role);
+    this.userRoleRepo = this._dataSource.getRepository(UserRole);
   }
   
   findById(id: string): Promise<Role | null> {

@@ -33,10 +33,31 @@ const redisClientProvider = {
       provide: 'REDIS_SHUTDOWN_HOOK',
       useFactory: (client: RedisClient) =>
         new (class implements OnApplicationShutdown {
+          private shuttingDown = false;
+
           async onApplicationShutdown() {
+            if (this.shuttingDown) return;
+            this.shuttingDown = true;
+
             try {
-              await client.quit();
-            } catch {}
+              if (!client.isOpen) return;
+
+              const timeoutMs = 3000;
+              const quit = client.quit();
+              await Promise.race([
+                quit,
+                new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error('Redis quit timed out')), timeoutMs),
+                ),
+              ]);
+            } catch (err) {
+              console.warn('[redis] graceful quit failed, forcing disconnect:', err);
+              try {
+                client.disconnect();
+              } catch (disconnectErr) {
+                console.error('[redis] force disconnect failed:', disconnectErr);
+              }
+            }
           }
         })(),
       inject: [REDIS_CLIENT],

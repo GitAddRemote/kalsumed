@@ -2,9 +2,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToMany,
   OneToMany,
-  JoinTable,
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
@@ -14,6 +12,8 @@ import {
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { OAuthAccount } from '../../auth/entities/oauth-account.entity';
+import type { UserRole } from './user-role.entity';
+import type { Role } from '../../role/entities/role.entity';
 
 @Entity('users')
 @Index(['username'], { unique: true })
@@ -76,8 +76,8 @@ export class User {
   @Column({ nullable: true })
   organizationId?: string;
 
-  @OneToMany('UserRole', (ur: any) => ur.user, { cascade: true })
-  userRoles!: import('./user-role.entity').UserRole[];
+  @OneToMany('UserRole', (ur: UserRole) => ur.user, { cascade: true }) // ✅ Fixed any type
+  userRoles!: UserRole[];
 
   @OneToMany(() => OAuthAccount, (oa) => oa.user, { cascade: true })
   oauthAccounts!: OAuthAccount[];
@@ -94,8 +94,8 @@ export class User {
   @DeleteDateColumn({ type: 'timestamp with time zone' })
   deletedAt?: Date;
 
-  get roles(): import('../../role/entities/role.entity').Role[] {
-    return (this.userRoles || []).map((ur) => ur.role).filter(Boolean) as any;
+  get roles(): Role[] { // ✅ Fixed any type
+    return (this.userRoles || []).map((ur) => ur.role).filter(Boolean);
   }
 
   @BeforeInsert()
@@ -106,5 +106,3 @@ export class User {
     }
   }
 }
-
-import type { Role } from '../../role/entities/role.entity';
