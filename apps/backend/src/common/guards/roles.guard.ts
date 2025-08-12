@@ -9,7 +9,7 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
 
 // Type guard function (like instanceof in Java)
 function isUserWithRoles(
-  user: any,
+  user,
 ): user is { userRoles: Array<{ role: { name: string } }> } {
   return (
     user &&
@@ -20,10 +20,10 @@ function isUserWithRoles(
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly _reflector: Reflector) {}
+  constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this._reflector.get<string[]>(
+    const requiredRoles = this.reflector.get<string[]>(
       ROLES_KEY,
       context.getHandler(),
     );
