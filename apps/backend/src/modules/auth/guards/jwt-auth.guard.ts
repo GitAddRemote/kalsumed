@@ -4,6 +4,20 @@ import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/com
 import { AuthGuard } from '@nestjs/passport';
 import { Observable } from 'rxjs';
 
+// Define proper types for better type safety
+interface JwtPayload {
+  sub: string;
+  username: string;
+  email?: string;
+  iat?: number;
+  exp?: number;
+}
+
+interface AuthInfo {
+  name?: string;
+  message?: string;
+}
+
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   /**
@@ -17,17 +31,19 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   /**
    * Override to throw a cleaner exception when authentication fails
    */
-  override handleRequest(err: any, user: any, info: any) {
-    // err is any error thrown by the strategy
-    // user is the validated payload (or null)
-    // info is additional info (e.g. TokenExpiredError)
+  override handleRequest<TUser = JwtPayload>(
+    err: Error | null,
+    user: JwtPayload | null,
+    info: AuthInfo | null,
+    context: ExecutionContext,
+    status?: number,
+  ): TUser {
     if (err) {
       throw err;
     }
     if (!user) {
-      // you could inspect `info` to give more context (e.g. token expired)
       throw new UnauthorizedException('Invalid or missing authentication token');
     }
-    return user;
+    return user as unknown as TUser;
   }
 }

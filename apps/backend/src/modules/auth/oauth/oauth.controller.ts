@@ -15,6 +15,23 @@ import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
 import { OAuthService } from './oauth.service';
 
+// Define OAuth user type
+interface OAuthUser {
+  id: string;
+  provider: string;
+  emails?: Array<{ value: string; verified?: boolean }>;
+  displayName?: string;
+  photos?: Array<{ value: string }>;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+}
+
+// Extend Express Request to include user
+interface AuthenticatedRequest extends Request {
+  user?: OAuthUser;
+}
+
 @Controller('auth/oauth')
 export class OAuthController {
   constructor(private readonly _oauthService: OAuthService) {}
@@ -23,22 +40,23 @@ export class OAuthController {
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth(): Promise<void> {
-    // Handled by Google strategy
+    // The AuthGuard('google') handles the entire OAuth initiation
+    // This function body will never execute in normal flow
   }
 
   // Google callback endpoint
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Res() res: Response,
   ): Promise<void> {
     try {
       // The user object is attached by the Google strategy
-      const user = req.user as any; // Will be populated by GoogleStrategy
+      const user = req.user;
       
       if (!user) {
-        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Authentication failed`);
+        return res.redirect(`${process.env.FRONTEND_URL ?? 'http://localhost:3000'}/auth/error?message=Authentication failed`);
       }
 
       // Generate JWT tokens for the authenticated user
@@ -60,31 +78,33 @@ export class OAuthController {
       });
 
       // Redirect to frontend success page
-      return res.redirect(`${process.env.FRONTEND_URL}/auth/success`);
+      return res.redirect(`${process.env.FRONTEND_URL ?? 'http://localhost:3000'}/auth/success`);
       
     } catch (error) {
       console.error('Google OAuth callback error:', error);
-      return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Authentication failed`);
+      return res.redirect(`${process.env.FRONTEND_URL ?? 'http://localhost:3000'}/auth/error?message=Authentication failed`);
     }
   }
 
-  // Similarly, Apple OAuth2 flow
+  // Apple OAuth2 flow
   @Get('apple')
   @UseGuards(AuthGuard('apple'))
   async appleAuth(): Promise<void> {
-    throw new Error('Apple OAuth not implemented yet');
+    // This initiates the Apple OAuth flow - handled by Apple strategy
+    // User will be redirected to Apple's authorization server
   }
 
   @Get('apple/callback')
   @UseGuards(AuthGuard('apple'))
   async appleAuthCallback(
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Res() res: Response,
-    @Query() query: any,
-    @Headers() headers: any,
-    @Session() session: any,
-    @Param() params: any,
+    @Query() query: Record<string, string>,
+    @Headers() headers: Record<string, string | string[]>,
+    @Session() session: Record<string, unknown>,
+    @Param() params: Record<string, string>,
   ): Promise<void> {
-    // Handle Apple OAuth callback
+    // Handle Apple OAuth callback - similar to Google
+    throw new Error('Apple OAuth callback not implemented yet');
   }
 }
