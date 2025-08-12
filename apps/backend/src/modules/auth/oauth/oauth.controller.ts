@@ -9,7 +9,8 @@ import {
   Query,
   Headers,
   Session,
-  Param
+  Param,
+  Logger  // ✅ Add Logger import
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
@@ -34,6 +35,8 @@ interface AuthenticatedRequest extends Request {
 
 @Controller('auth/oauth')
 export class OAuthController {
+  private readonly logger = new Logger(OAuthController.name); // ✅ Add logger
+
   constructor(private readonly _oauthService: OAuthService) {}
 
   // Initiate Google OAuth2 flow
@@ -81,7 +84,7 @@ export class OAuthController {
       return res.redirect(`${process.env.FRONTEND_URL ?? 'http://localhost:3000'}/auth/success`);
       
     } catch (error) {
-      console.error('Google OAuth callback error:', error);
+      this.logger.error('Google OAuth callback error:', error); // ✅ Use logger instead of console
       return res.redirect(`${process.env.FRONTEND_URL ?? 'http://localhost:3000'}/auth/error?message=Authentication failed`);
     }
   }
@@ -97,12 +100,12 @@ export class OAuthController {
   @Get('apple/callback')
   @UseGuards(AuthGuard('apple'))
   async appleAuthCallback(
-    @Req() req: AuthenticatedRequest,
-    @Res() res: Response,
-    @Query() query: Record<string, string>,
-    @Headers() headers: Record<string, string | string[]>,
-    @Session() session: Record<string, unknown>,
-    @Param() params: Record<string, string>,
+    @Req() _req: AuthenticatedRequest,
+    @Res() _res: Response,
+    @Query() _query: Record<string, string>,
+    @Headers() _headers: Record<string, string | string[]>,
+    @Session() _session: Record<string, unknown>,
+    @Param() _params: Record<string, string>,
   ): Promise<void> {
     // Handle Apple OAuth callback - similar to Google
     throw new Error('Apple OAuth callback not implemented yet');
