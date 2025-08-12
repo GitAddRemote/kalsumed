@@ -95,4 +95,73 @@ export class OAuthService {
     const redirectUrl = this.config.get<string>('OAUTH_SUCCESS_REDIRECT') ?? '/dashboard';
     res.redirect(redirectUrl);
   }
+
+  /**
+   * Handle OAuth login and return JWT tokens (used by controller callbacks)
+   */
+  async handleOAuthLogin(oauthUser: any): Promise<{ accessToken: string; refreshToken: string }> {
+    const provider = oauthUser.provider;
+    const providerUserId = oauthUser.id;
+
+    // 1. Try existing OAuthAccount → user
+    let user = await this.userService.findByOAuthAccount(provider, providerUserId);
+
+    // 2. If no OAuth link, try by email or create new user
+    if (!user) {
+      const email = oauthUser.emails?.[0]?.value;
+      if (email) {
+        try {
+          user = await this.userService.getByEmail(email);
+        } catch {
+          user = null;
+        }
+      }
+      if (!user) {
+        // Create a new user with a random password placeholder
+        const username = email?.split('@')[0] ?? `${provider}_${providerUserId}`;
+        const randomHash = Math.random().toString(36).slice(-8);
+        user = await this.userService.createLocal(username, email ?? '', randomHash);
+      }
+      
+      // Persist OAuthAccount
+      const { accessToken, refreshToken, expiresIn } = oauthUser;
+      const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
+      const oauthData: Partial<OAuthAccount> = {
+        user,
+        provider,
+        providerUserId,
+      };
+      
+      // Only assign properties that have actual values
+      if (accessToken) {
+        oauthData.accessToken = accessToken;
+      }
+      if (refreshToken) {
+        oauthData.refreshToken = refreshToken;
+      }
+      if (expiresAt) {
+        oauthData.expiresAt = expiresAt;
+      }
+
+      const oa = this.oauthRepo.create(oauthData);
+      await this.oauthRepo.save(oa);
+    }
+
+    // 3. Generate JWT tokens
+    const payload = { 
+      sub: user.id, 
+      username: user.username, 
+      email: user.email 
+    };
+    
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: this.config.get<string>('JWT_ACCESS_EXPIRES_IN') ?? '15m',
+    });
+    
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d',
+    });
+
+    return { accessToken, refreshToken };
+  }
 }

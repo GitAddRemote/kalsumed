@@ -33,13 +33,40 @@ export class OAuthController {
   async googleAuthCallback(
     @Req() req: Request,
     @Res() res: Response,
-    @Query() query: any,
-    @Body() body: any,
-    @Headers() headers: any,
-    @Session() session: any,
-    @Param() params: any,
   ): Promise<void> {
-    // Handle Google OAuth callback
+    try {
+      // The user object is attached by the Google strategy
+      const user = req.user as any; // Will be populated by GoogleStrategy
+      
+      if (!user) {
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Authentication failed`);
+      }
+
+      // Generate JWT tokens for the authenticated user
+      const tokens = await this._oauthService.handleOAuthLogin(user);
+      
+      // Set tokens as HTTP-only cookies for security
+      res.cookie('access_token', tokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+
+      res.cookie('refresh_token', tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      // Redirect to frontend success page
+      return res.redirect(`${process.env.FRONTEND_URL}/auth/success`);
+      
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Authentication failed`);
+    }
   }
 
   // Similarly, Apple OAuth2 flow
