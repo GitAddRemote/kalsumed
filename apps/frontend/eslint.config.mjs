@@ -18,6 +18,8 @@ export default [
         ecmaFeatures: {
           jsx: true,
         },
+        project: './tsconfig.json',
+        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
         ...globals.browser,
@@ -47,8 +49,8 @@ export default [
       // React rules
       'react/jsx-uses-react': 'error',
       'react/jsx-uses-vars': 'error',
-      'react/react-in-jsx-scope': 'off', // Not needed in React 17+
-      'react/prop-types': 'off', // Using TypeScript instead
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
       
       // React Hooks rules
       'react-hooks/rules-of-hooks': 'error',
@@ -64,7 +66,7 @@ export default [
       'no-console': 'warn',
       'prefer-const': 'error',
       'no-var': 'error',
-      'no-unused-vars': 'off', // Use TypeScript version
+      'no-unused-vars': 'off',
     },
     settings: {
       react: {
