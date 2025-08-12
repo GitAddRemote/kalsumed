@@ -4,13 +4,14 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { LoginDto } from './dto/login.dto';
+import { User } from '../user/entities/user.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly usersService: UserService,     // ✅ Remove underscore
-    private readonly jwtService: JwtService,        // ✅ Remove underscore  
-    private readonly configService: ConfigService, // ✅ Remove underscore
+    private readonly usersService: UserService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -19,11 +20,10 @@ export class AuthService {
    * @param password - The plain-text password to verify
    * @returns The user object if valid, otherwise null
    */
-  private async validateUser(
+  public async validateUser(
     username: string,
     password: string,
-  ) {
-    // TypeScript will infer the correct type based on what's actually returned
+  ): Promise<Omit<User, 'passwordHash' | 'userRoles' | 'roles'> | null> {
     const user = await this.usersService.findByUsername(username);
     if (user?.passwordHash) {
       const isMatch = await bcrypt.compare(password, user.passwordHash);
@@ -47,10 +47,10 @@ export class AuthService {
     }
 
     const payload = { username: user.username, sub: user.id };
-    const accessToken = this.jwtService.sign(payload);                    // ✅ Update usage
-    const refreshToken = this.jwtService.sign(payload, {                  // ✅ Update usage
-      secret: this.configService.getOrThrow<string>('jwt.refreshSecret'), // ✅ Update usage
-      expiresIn: this.configService.getOrThrow<string>('jwt.refreshExpiresIn'), // ✅ Update usage
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.getOrThrow<string>('jwt.refreshSecret'),
+      expiresIn: this.configService.getOrThrow<string>('jwt.refreshExpiresIn'),
     });
 
     return { accessToken, refreshToken };
@@ -63,10 +63,10 @@ export class AuthService {
   async refresh(user: { userId: string; username: string }): Promise<{ accessToken: string; refreshToken: string }> {
     const payload = { username: user.username, sub: user.userId };
 
-    const accessToken = this.jwtService.sign(payload);                    // ✅ Update usage
-    const refreshToken = this.jwtService.sign(payload, {                  // ✅ Update usage
-      secret: this.configService.getOrThrow<string>('jwt.refreshSecret'), // ✅ Update usage
-      expiresIn: this.configService.getOrThrow<string>('jwt.refreshExpiresIn'), // ✅ Update usage
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.getOrThrow<string>('jwt.refreshSecret'),
+      expiresIn: this.configService.getOrThrow<string>('jwt.refreshExpiresIn'),
     });
 
     return { accessToken, refreshToken };
