@@ -10,93 +10,113 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   lint-and-unit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8.6.0
+          version: 10.14.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
-      - name: Enable corepack & set pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@10.14.0 --activate
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
       - name: Lint Backend
         run: pnpm --filter @kalsumed/backend run lint
+
       - name: Lint Frontend
         run: pnpm --filter @kalsumed/frontend run lint
       # - name: Run unit tests
       #   run: pnpm test:unit
+
   test:
     needs: lint-and-unit
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8.6.0
+          version: 10.14.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
-      - name: Enable corepack & set pnpm
+
+      - name: Install dependencies (for any local scripts)
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate backend .env.dev
         run: |
-          corepack enable
-          corepack prepare pnpm@10.14.0 --activate
-      - name: Generate backend and frontend .env.dev
+          {
+            echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}";
+            echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}";
+            echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}";
+            echo "DATABASE_HOST=database";
+            echo "DATABASE_PORT=5432";
+            echo "DATABASE_URL=postgres://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@database:5432/${{ secrets.POSTGRES_DB }}";
+            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}";
+            echo "REDIS_HOST=redis";
+            echo "REDIS_PORT=6379";
+            echo "REDIS_URL=redis://:${{ secrets.REDIS_PASSWORD }}@redis:6379";
+            echo "RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}";
+            echo "RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}";
+            echo "RABBITMQ_HOST=rabbitmq";
+            echo "RABBITMQ_PORT=5672";
+            echo "JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}";
+            echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}";
+            echo "NODE_ENV=development";
+          } > apps/backend/.env.dev
+          chmod 600 apps/backend/.env.dev
+
+      - name: Generate frontend .env.dev
         run: |
-          mkdir -p apps/backend apps/frontend
-          cp apps/backend/.env.template apps/backend/.env.dev
-          cp apps/frontend/.env.template apps/frontend/.env.dev
-          sed -i "s|POSTGRES_USER=.*|POSTGRES_USER=${{ secrets.POSTGRES_USER }}|" apps/backend/.env.dev
-          sed -i "s|POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}|" apps/backend/.env.dev
-          sed -i "s|POSTGRES_DB=.*|POSTGRES_DB=${{ secrets.POSTGRES_DB }}|" apps/backend/.env.dev
-          sed -i "s|DATABASE_HOST=.*|DATABASE_HOST=database|" apps/backend/.env.dev
-          sed -i "s|REDIS_PASSWORD=.*|REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}|" apps/backend/.env.dev
-          sed -i "s|REDIS_URL=.*|REDIS_URL=redis://:${{ secrets.REDIS_PASSWORD }}@redis:6379|" apps/backend/.env.dev
-          sed -i "s|RABBITMQ_USER=.*|RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}|" apps/backend/.env.dev
-          sed -i "s|RABBITMQ_PASSWORD=.*|RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}|" apps/backend/.env.dev
-          sed -i "s|JWT_ACCESS_SECRET=.*|JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}|" apps/backend/.env.dev
-          sed -i "s|JWT_REFRESH_SECRET=.*|JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}|" apps/backend/.env.dev
-          sed -i "s|NODE_ENV=.*|NODE_ENV=development|" apps/backend/.env.dev
-          sed -i "s|VITE_API_BASE_URL=.*|VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}|" apps/frontend/.env.dev
-      - name: Dump envs
-        run: |
-          echo "--- apps/backend/.env.dev ---"
-          cat apps/backend/.env.dev
-          echo "--- apps/frontend/.env.dev ---"
-          cat apps/frontend/.env.dev
+          {
+            mkdir -p apps/frontend
+            cat > apps/frontend/.env.dev <<'EOF'
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+            EOF
+          }
+          chmod 600 apps/frontend/.env.dev
+
       - name: Build & start dev stack
-        env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }} # for compose interpolation/build args
         run: docker compose --env-file apps/backend/.env.dev -f docker-compose.dev.yml up -d --build
+
       - name: Wait for backend health endpoint
         run: |
-          for i in {1..60}; do
-            HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health) || true
-            if [ "$HTTP" = "200" ]; then
-              echo "✅ Health check passed"
+          attempts=120
+          url=http://localhost:3000/api/health
+          for i in $(seq 1 $attempts); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$url" || true)
+            if [ "$code" = "200" ]; then
+              echo "Health OK at attempt $i"
               exit 0
             fi
-            echo "⏳ waiting for health... ($i/60)"
+            echo "Waiting for health... ($i/$attempts) code=$code"
             sleep 2
           done
-          echo "❌ Health endpoint never became ready"
-
-          echo "\n📌 Docker compose logs for debugging:"
-          docker compose -f docker-compose.dev.yml logs backend database
-
+          echo "Health endpoint failed"
+          docker compose -f docker-compose.dev.yml logs backend database redis || true
           exit 1
 
       - name: Install jq
@@ -107,11 +127,27 @@ jobs:
           curl -s http://localhost:3000/api/health | jq .
           curl -s http://localhost:3000/api/health \
             | jq -e '
-                .status                     == "ok" and
-                .info.database.status       == "up" and
-                .info.redis.status          == "up"
+                .status == "ok" and
+                .info.database.status == "up" and
+                .info.redis.status == "up"
               '
+
+      - name: (Optional) Run backend tests
+        run: docker compose -f docker-compose.dev.yml exec -T backend pnpm test || echo "No tests step configured"
+
+      - name: Secrets scan
+        if: always()
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: detect --source . --no-banner
 
       - name: Tear down dev stack
         if: always()
-        run: docker compose -f docker-compose.dev.yml down -v --remove-orphans
+        run: |
+          docker compose -f docker-compose.dev.yml down -v --remove-orphans
+          shred -u apps/backend/.env.dev || rm -f apps/backend/.env.dev
+          shred -u apps/frontend/.env.dev || rm -f apps/frontend/.env.dev
+
+      - name: Docker prune
+        if: always()
+        run: docker system prune -f
