@@ -64,6 +64,7 @@ jobs:
           sed -i "s|POSTGRES_DB=.*|POSTGRES_DB=${{ secrets.POSTGRES_DB }}|" apps/backend/.env.dev
           sed -i "s|DATABASE_HOST=.*|DATABASE_HOST=database|" apps/backend/.env.dev
           sed -i "s|REDIS_PASSWORD=.*|REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}|" apps/backend/.env.dev
+          sed -i "s|REDIS_URL=.*|REDIS_URL=redis://:${{ secrets.REDIS_PASSWORD }}@redis:6379|" apps/backend/.env.dev
           sed -i "s|RABBITMQ_USER=.*|RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}|" apps/backend/.env.dev
           sed -i "s|RABBITMQ_PASSWORD=.*|RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}|" apps/backend/.env.dev
           sed -i "s|JWT_ACCESS_SECRET=.*|JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}|" apps/backend/.env.dev
