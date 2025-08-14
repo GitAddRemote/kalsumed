@@ -1,3 +1,4 @@
+// apps/backend/src/common/guards/roles.guard.ts
 import {
   Injectable,
   CanActivate,
@@ -6,17 +7,34 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
-import { User } from '../../modules/user/entities/user.entity';
 
-// Type guard function (like instanceof in Java)
-function isUserWithRoles(
-  user,
-): user is { userRoles: Array<{ role: { name: string } }> } {
-  return (
-    user &&
-    Array.isArray(user.userRoles) &&
-    user.userRoles.every((ur) => ur.role && typeof ur.role.name === 'string')
-  );
+interface Role {
+  name: string;
+}
+interface UserRole {
+  role: Role;
+}
+interface UserWithRoles {
+  userRoles: UserRole[];
+}
+
+type RequestWithUser = {
+  user?: unknown;
+};
+
+function isUserWithRoles(user: unknown): user is UserWithRoles {
+  if (!user || typeof user !== 'object') return false;
+  const candidate = user as Partial<UserWithRoles>;
+  if (!Array.isArray(candidate.userRoles)) return false;
+  return candidate.userRoles.every((ur): ur is UserRole => {
+    if (!ur || typeof ur !== 'object') return false;
+    const role = (ur as { role?: unknown }).role;
+    return (
+      !!role &&
+      typeof role === 'object' &&
+      typeof (role as { name?: unknown }).name === 'string'
+    );
+  });
 }
 
 @Injectable()
@@ -24,26 +42,23 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.get<string[]>(
-      ROLES_KEY,
-      context.getHandler(),
-    );
+    const requiredRoles =
+      this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]) ?? [];
 
-    if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
-    }
+    if (requiredRoles.length === 0) return true;
 
-    const request = context.switchToHttp().getRequest();
-    const user = request.user; // No cast!
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
+    const { user } = request;
 
-    // Runtime type checking (like instanceof)
     if (!isUserWithRoles(user)) {
       throw new ForbiddenException('User has no roles assigned');
     }
 
-    // Now TypeScript knows the shape of user
     const userRoleNames = user.userRoles.map((ur) => ur.role.name);
-    const hasRole = requiredRoles.some((role) => userRoleNames.includes(role));
+    const hasRole = requiredRoles.some((r) => userRoleNames.includes(r));
 
     if (!hasRole) {
       throw new ForbiddenException(
