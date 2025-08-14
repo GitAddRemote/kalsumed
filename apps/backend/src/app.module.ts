@@ -38,7 +38,7 @@ import { OAuthModule } from './modules/auth/oauth/oauth.module';
         RABBITMQ_PASSWORD: Joi.string().optional(),
 
         // Legacy JWT (if still used elsewhere)
-        JWT_SECRET: Joi.string().required(),
+        JWT_ACCESS_SECRET: Joi.string().required(),
 
         // App
         NODE_ENV: Joi.string()

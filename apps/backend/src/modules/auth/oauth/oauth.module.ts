@@ -19,7 +19,7 @@ import { UserModule } from 'src/modules/user/user.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (cfg: ConfigService) => ({
-        secret: cfg.getOrThrow<string>('JWT_SECRET'), // ✅ Returns string, not string | undefined
+        secret: cfg.getOrThrow<string>('JWT_ACCESS_SECRET'), // ✅ Returns string, not string | undefined
         signOptions: { expiresIn: '15m' },
       }),
       inject: [ConfigService],
