@@ -1,32 +1,48 @@
-import { Entity
-    , PrimaryGeneratedColumn
-    , Column
-    , ManyToOne
-    , JoinColumn
-    , Unique
-    , CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  Unique,
+  Index,
+} from 'typeorm';
+import { Expose } from 'class-transformer';
+import { User } from './user.entity';
+import { Role } from '../../role/entities/role.entity';
 
 @Entity('user_roles')
 @Unique(['userId', 'roleId'])
 export class UserRole {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  readonly id!: string;
 
-  @Column()
+  @Index()
+  @Column({ type: 'uuid' })
   userId!: string;
 
-  @Column()
+  @Index()
+  @Column({ type: 'uuid' })
   roleId!: string;
 
-  // Use string targets to avoid static imports and cycles
-  @ManyToOne('User', (user: any) => user.userRoles, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' })
-  user!: import('./user.entity').User;
+  @ManyToOne(() => User, user => user.userRoles, {
+    onDelete: 'CASCADE',
+    nullable: false,
+  })
+  user!: User;
 
-  @ManyToOne('Role', (role: any) => role.userRoles, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'roleId' })
-  role!: import('../../role/entities/role.entity').Role;
+  @ManyToOne(() => Role, role => role.users, {
+    onDelete: 'CASCADE',
+    nullable: false,
+  })
+  role!: Role;
 
-  @CreateDateColumn({ type: 'timestamp with time zone' })
-  assignedAt!: Date;
+  @Expose()
+  get userRef(): string {
+    return this.userId;
+  }
+
+  @Expose()
+  get roleRef(): string {
+    return this.roleId;
+  }
 }
