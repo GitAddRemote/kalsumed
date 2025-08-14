@@ -1,4 +1,4 @@
-// AFTER (apps/backend/eslint.config.mjs)
+// apps/backend/eslint.config.mjs
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
@@ -51,6 +51,20 @@ export default [
       ],
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
+
+      // Added fix: supply options object to prevent crash
+      '@typescript-eslint/no-unused-expressions': [
+        'error',
+        {
+          allowShortCircuit: true,
+          allowTernary: true,
+          allowTaggedTemplates: true,
+          enforceForJSX: true,
+        },
+      ],
+      // Alternative (if crash persists):
+      // '@typescript-eslint/no-unused-expressions': 'off',
+      // 'no-unused-expressions': ['error', { allowShortCircuit: true, allowTernary: true, allowTaggedTemplates: true }],
     },
   },
 ];
