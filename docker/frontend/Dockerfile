@@ -4,7 +4,7 @@ FROM node:18-alpine AS builder
 WORKDIR /workspace
 
 COPY package.json pnpm-lock.yaml turbo.json pnpm-workspace.yaml ./
-RUN corepack enable && corepack prepare pnpm@latest --activate && pnpm install
+RUN corepack enable && corepack prepare pnpm@10.14.0 --activate && pnpm install
 COPY apps/frontend ./apps/frontend
 RUN pnpm --filter @kalsumed/frontend build
 
