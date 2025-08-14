@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
+import { User } from '../../modules/user/entities/user.entity';
 
 // Type guard function (like instanceof in Java)
 function isUserWithRoles(

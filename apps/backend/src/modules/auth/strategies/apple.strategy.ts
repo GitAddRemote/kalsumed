@@ -1,5 +1,3 @@
-// apps/backend/src/modules/auth/strategies/apple.strategy.ts
-
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import {
@@ -7,6 +5,7 @@ import {
   AuthenticateOptions,
 } from 'passport-apple';
 import { ConfigService } from '@nestjs/config';
+import { User } from '../../modules/user/entities/user.entity';
 
 // the shape you return from validate()
 export interface AppleProfile {

@@ -1,5 +1,3 @@
-// apps/backend/src/modules/auth/strategies/google.strategy.ts
-
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import {
@@ -7,6 +5,7 @@ import {
   StrategyOptions,
 } from 'passport-google-oauth20';
 import { ConfigService } from '@nestjs/config';
+import { User } from '../../modules/user/entities/user.entity';
 
 export interface GoogleProfile {
   provider: 'google';
