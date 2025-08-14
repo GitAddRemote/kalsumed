@@ -62,9 +62,6 @@ export default [
           enforceForJSX: true,
         },
       ],
-      // Alternative (if crash persists):
-      // '@typescript-eslint/no-unused-expressions': 'off',
-      // 'no-unused-expressions': ['error', { allowShortCircuit: true, allowTernary: true, allowTaggedTemplates: true }],
     },
   },
 ];
