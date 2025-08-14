@@ -1,20 +1,19 @@
+// AFTER (apps/backend/eslint.config.mjs)
 import js from '@eslint/js';
-import typescript from '@typescript-eslint/eslint-plugin';
-import parser from '@typescript-eslint/parser';
+import tseslint from 'typescript-eslint';
 
 export default [
   js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked, // or recommended if not using type-aware rules
+  ...tseslint.configs.recommendedTypeChecked,
   {
-    files: ['src/**/*.ts'], // Relative to apps/backend
+    files: ['src/**/*.ts'],
     languageOptions: {
-      parser: parser,
+      parser: tseslint.parser,
       parserOptions: {
         project: './tsconfig.json',
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {
-        // ✅ Node.js globals
         process: 'readonly',
         Buffer: 'readonly',
         console: 'readonly',
@@ -27,40 +26,31 @@ export default [
       },
     },
     plugins: {
-      '@typescript-eslint': typescript,
+      '@typescript-eslint': tseslint.plugin,
     },
     rules: {
-      // 🚨 Critical Rules
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
-          argsIgnorePattern: '^_', // ✅ This should ignore _reflector
+          argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
           destructuredArrayIgnorePattern: '^_',
         },
       ],
-      'no-unused-vars': 'off', // ✅ Make sure base rule is off
+      'no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/prefer-nullish-coalescing': 'error',
       '@typescript-eslint/prefer-optional-chain': 'error',
-
-      // 🧹 Code Quality
       'no-console': 'warn',
       'prefer-const': 'error',
       'no-var': 'error',
-
-      // 🏗️ NestJS Compatibility
       '@typescript-eslint/no-empty-function': [
         'error',
-        {
-          allow: ['constructors'],
-        },
+        { allow: ['constructors'] },
       ],
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
     },
   },
 ];
-
-
