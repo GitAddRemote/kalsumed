@@ -10,6 +10,15 @@ import {
 } from 'typeorm';
 import { Expose } from 'class-transformer';
 import { User } from '../../user/entities/user.entity';
+import { Permission } from '../../permission/entities/permission.entity';
+
+export const PERMISSION_NAMES = [
+  'track_food',
+  'view_progress',
+  'ai_insights',
+  'advanced_analytics',
+] as const;
+export type PermissionName = (typeof PERMISSION_NAMES)[number];
 
 @Entity('roles')
 export class Role {
@@ -22,6 +31,9 @@ export class Role {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   description?: string | null;
+
+  @Column({ type: 'boolean', default: true })
+  isActive!: boolean;
 
   @CreateDateColumn({ type: 'timestamptz' })
   readonly createdAt!: Date;
@@ -37,12 +49,25 @@ export class Role {
   })
   users?: User[];
 
-  // Exposed helper: list of user IDs (safe, no any, no unsafe member access)
+  @ManyToMany(() => Permission, permission => permission.roles, { cascade: false, eager: true })
+  @JoinTable({
+    name: 'role_permissions',
+    joinColumn: { name: 'role_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'permission_id', referencedColumnName: 'id' },
+  })
+  permissions?: Permission[];
+
   @Expose()
   get userIds(): string[] {
     if (!Array.isArray(this.users)) return [];
-    return this.users
-      .filter((u): u is User => !!u && typeof u === 'object' && typeof u.id === 'string')
-      .map(u => u.id);
+    return this.users.filter(u => !!u && typeof u.id === 'string').map(u => u.id);
+  }
+
+  @Expose()
+  get permissionNames(): string[] {
+    if (!Array.isArray(this.permissions)) return [];
+    return this.permissions
+      .filter(p => !!p && typeof p.name === 'string')
+      .map(p => p.name);
   }
 }

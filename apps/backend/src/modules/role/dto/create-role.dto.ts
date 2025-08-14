@@ -1,23 +1,23 @@
-mport { Transform } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsString,
   IsOptional,
   MaxLength,
   Matches,
+  IsArray,
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsIn,
+  IsBoolean,
 } from 'class-validator';
-// (Optional) Uncomment if using Swagger decorators
-// import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PERMISSION_NAMES } from '../../permission/entities/permission.entity';
 
 function safeTrim(value: unknown): unknown {
-  if (typeof value === 'string') {
-    const t = value.trim();
-    return t;
-  }
+  if (typeof value === 'string') return value.trim();
   return value;
 }
 
 export class CreateRoleDto {
-  // @ApiProperty({ example: 'admin', description: 'Unique role name (kebab-case lowercase)' })
   @Transform(({ value }) => safeTrim(value), { toClassOnly: true })
   @IsString()
   @MaxLength(50)
@@ -26,10 +26,23 @@ export class CreateRoleDto {
   })
   readonly name!: string;
 
-  // @ApiPropertyOptional({ example: 'Administrative access', description: 'Optional description' })
   @Transform(({ value }) => safeTrim(value), { toClassOnly: true })
   @IsOptional()
   @IsString()
   @MaxLength(255)
   readonly description?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  readonly isActive?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsIn(PERMISSION_NAMES, {
+    each: true,
+    message: `each permission must be one of: ${PERMISSION_NAMES.join(', ')}`,
+  })
+  readonly permissions?: string[];
 }
