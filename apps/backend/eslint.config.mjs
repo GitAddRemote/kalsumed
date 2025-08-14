@@ -4,6 +4,7 @@ import parser from '@typescript-eslint/parser';
 
 export default [
   js.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked, // or recommended if not using type-aware rules
   {
     files: ['src/**/*.ts'], // Relative to apps/backend
     languageOptions: {
