@@ -1,51 +1,135 @@
-import { Logger } from '@nestjs/common';
+/**
+ * @file apps/backend/src/utils/migration.util.ts
+ * @summary Safe utilities for migrations & seeding with strict error handling.
+ * @module Utils/MigrationUtil
+ * @description
+ *  - `runMigrations()` works with 0 args (auto-resolves ../data-source),
+ *    a Nest application context, or a TypeORM DataSource.
+ *  - Uniform logging wrappers and safe error extractors.
+ *  - ESLint-friendly: no `any`, no unsafe member access, no unnecessary assertions.
+ * @author
+ *  Demian (GitAddRemote)
+ * @copyright
+ *  (c) 2025 Presstronic Studios LLC
+ */
+
+import type { INestApplicationContext } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
-export async function runMigrations(): Promise<void> {
-  const logger = new Logger('Migrations');
+type LoggerLike = Pick<Console, 'log' | 'error' | 'time' | 'timeEnd'>;
 
+/** Narrow type for generic non-null objects. */
+type UnknownRecord = Record<string, unknown>;
+
+function isRecord(v: unknown): v is UnknownRecord {
+  return typeof v === 'object' && v !== null;
+}
+
+/** Type guard for a Nest application context (has a callable `get`). */
+function isNestAppContext(v: unknown): v is INestApplicationContext {
+  return isRecord(v) && typeof v['get'] === 'function';
+}
+
+/**
+ * Get a human-friendly error message from an unknown error value.
+ * Never throws; always returns a string.
+ */
+export function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (isRecord(err) && typeof err.message === 'string') return err.message;
   try {
-    logger.log('Running database migrations...');
-    
-    const host = process.env.DATABASE_HOST ?? 'localhost'; // ✅ Changed || to ??
-    const port = parseInt(process.env.DATABASE_PORT ?? '5432'); // ✅ Changed || to ??
-    const username = process.env.DATABASE_USERNAME;
-    const password = process.env.DATABASE_PASSWORD;
-    const database = process.env.DATABASE_NAME;
-
-    if (!username || !password || !database) {
-      throw new Error('Missing required database environment variables: DATABASE_USERNAME, DATABASE_PASSWORD, DATABASE_NAME');
-    }
-    
-    const dataSource = new DataSource({
-      type: 'postgres',
-      host,
-      port,
-      username,
-      password,
-      database,
-      entities: ['dist/**/*.entity.js'],
-      migrations: ['dist/src/migrations/*.js'],
-      synchronize: false,
-      logging: false,
-    });
-    
-    await dataSource.initialize();
-    const migrations = await dataSource.runMigrations();
-
-    if (migrations.length > 0) {
-      logger.log(`Successfully ran ${migrations.length} migration(s)`);
-      migrations.forEach(migration => {
-        logger.log(`✓ ${migration.name}`);
-      });
-    } else {
-      logger.log('Database is up to date - no migrations to run');
-    }
-    
-    await dataSource.destroy();
-  } catch (error) {
-    logger.error('❌ Migration failed:', error.message);
-    logger.error('Stack trace:', error.stack);
-    process.exit(1);
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
   }
+}
+
+/**
+ * Get an error stack string from an unknown error value, if present.
+ */
+export function getErrorStack(err: unknown): string | undefined {
+  if (err instanceof Error && typeof err.stack === 'string') return err.stack;
+  if (isRecord(err) && typeof err.stack === 'string') return err.stack;
+  return undefined;
+}
+
+/**
+ * Run an async step (e.g., a migration or seeder phase) with uniform logging.
+ * Times the step and logs success/failure. Rethrows the original error.
+ */
+export async function withMigrationLog<T>(
+  label: string,
+  task: () => Promise<T>,
+  logger: LoggerLike = console,
+): Promise<T> {
+  logger.time?.(label);
+  logger.log(`[START] ${label}`);
+  try {
+    const result = await task();
+    logger.timeEnd?.(label);
+    logger.log(`[OK]    ${label}`);
+    return result;
+  } catch (err: unknown) {
+    const message = getErrorMessage(err);
+    const stack = getErrorStack(err);
+    logger.timeEnd?.(label);
+    logger.error(`[FAIL] ${label}: ${message}`);
+    if (stack) logger.error(stack);
+    throw (err instanceof Error ? err : new Error(message));
+  }
+}
+
+/**
+ * Convenience helper to wrap sync steps while keeping a consistent API.
+ * (No `async` here ⇒ satisfies `require-await`.)
+ */
+export function withMigrationLogSync<T>(
+  label: string,
+  task: () => T,
+  logger: LoggerLike = console,
+): Promise<T> {
+  return withMigrationLog(label, () => Promise.resolve(task()), logger);
+}
+
+/** Pick a DataSource export from the ../data-source module safely (no casts). */
+function pickDataSource(mod: unknown): DataSource {
+  if (!isRecord(mod)) {
+    throw new Error('Invalid data-source module export.');
+  }
+  const rec = mod; // narrowed to UnknownRecord by isRecord
+  for (const key of Object.keys(rec)) {
+    const candidate = rec[key];
+    if (candidate instanceof DataSource) return candidate;
+  }
+  throw new Error('No DataSource instance exported by ../data-source.');
+}
+
+/**
+ * Run TypeORM migrations and log the result.
+ * Accepts 0 args (auto-import ../data-source), a Nest app context, or a DataSource.
+ */
+export async function runMigrations(
+  appOrDs?: INestApplicationContext | DataSource,
+  logger: LoggerLike = console,
+): Promise<void> {
+  let ds: DataSource;
+
+  if (appOrDs instanceof DataSource) {
+    ds = appOrDs;
+  } else if (isNestAppContext(appOrDs)) {
+    ds = appOrDs.get(DataSource);
+  } else {
+    // Zero-arg mode: dynamically import ../data-source and pick the DataSource export.
+    const mod: unknown = await import('../data-source');
+    ds = pickDataSource(mod);
+  }
+
+  await withMigrationLog('typeorm:migrations', async () => {
+    const results = await ds.runMigrations();
+    const ran =
+      Array.isArray(results) && results.length > 0
+        ? results.map((r) => r.name).join(', ')
+        : '(none)';
+    logger.log(`[MIGRATIONS] Applied: ${ran}`);
+  }, logger);
 }
