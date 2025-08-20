@@ -1,8 +1,17 @@
 /**
- * @file Role entity definition for user roles and permissions.
- * @summary Contains the Role entity and related types.
- * @author Demian (GitAddRemote)
- * @copyright (c) 2025 Presstronic Studios LLC
+ * @file apps/backend/src/modules/role/entities/role.entity.ts
+ * @summary Role entity with safe, typed computed getters and an `isActive` flag.
+ * @module Role/Entities/Role
+ * @description
+ *   - Defines the Role aggregate with ManyToMany → Permission.
+ *   - Includes `isActive` (boolean) used by the seeder and admin UIs.
+ *   - Computed views (`slug`, `permissionNames`, `permissionCount`) are implemented
+ *     without `any`, unsafe access, or unsafe returns and are defensive against
+ *     null/undefined relations.
+ * @author
+ *   Demian (GitAddRemote)
+ * @copyright
+ *   (c) 2025 Presstronic Studios LLC
  */
 
 import {
@@ -16,102 +25,88 @@ import {
   Index,
 } from 'typeorm';
 import { Expose } from 'class-transformer';
-import { User } from '../../user/entities/user.entity';
 import { Permission } from '../../permission/entities/permission.entity';
 
-/**
- * Role entity representing a user role in the system.
- */
 @Entity()
 export class Role {
   /**
-   * Unique identifier for the role.
-   * @readonly
+   * Primary UUID identifier.
    */
   @PrimaryGeneratedColumn('uuid')
   readonly id!: string;
 
   /**
-   * Unique name of the role.
+   * Unique role name (e.g., "admin", "user").
    */
   @Index({ unique: true })
-  @Column({ type: 'varchar', length: 50 })
+  @Column({ type: 'varchar', length: 64 })
   name!: string;
 
   /**
-   * Optional description of the role.
+   * Optional human-readable description for the role.
    */
   @Column({ type: 'varchar', length: 255, nullable: true })
   description?: string | null;
 
   /**
-   * Indicates if the role is active.
+   * Whether the role is currently active/assignable.
+   * Used by seeders and admin toggles.
    */
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
   /**
+   * Many-to-many relation to Permission.
+   * Initialized to [] to avoid undefined at runtime and keep computed
+   * getters simple and safe.
+   */
+  @ManyToMany(() => Permission, (permission) => permission.roles, {
+    cascade: false,
+    eager: false,
+  })
+  @JoinTable()
+  permissions: Permission[] = [];
+
+  /**
    * Timestamp when the role was created.
-   * @readonly
    */
   @CreateDateColumn({ type: 'timestamptz' })
   readonly createdAt!: Date;
 
   /**
    * Timestamp when the role was last updated.
-   * @readonly
    */
   @UpdateDateColumn({ type: 'timestamptz' })
   readonly updatedAt!: Date;
 
-  /**
-   * Users assigned to this role.
-   *
-   * NOTE: Do not initialize relation arrays (no `= []`).
-   */
-  @ManyToMany(() => User, (user) => user.roles, { cascade: false })
-  @JoinTable({
-    name: 'user_role',
-    joinColumn: { name: 'role_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'user_id', referencedColumnName: 'id' },
-  })
-  users?: User[];
+  // ───────────────────────────────────────────────────────────────
+  // Computed, serialized-only views
+  // ───────────────────────────────────────────────────────────────
 
   /**
-   * Permissions assigned to this role.
-   *
-   * NOTE: Do not initialize relation arrays (no `= []`).
-   */
-  @ManyToMany(() => Permission, (permission) => permission.roles, {
-    cascade: false,
-    eager: true,
-  })
-  @JoinTable({
-    name: 'role_permission',
-    joinColumn: { name: 'role_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'permission_id', referencedColumnName: 'id' },
-  })
-  permissions!: Permission[];
-
-  /**
-   * Array of user IDs assigned to this role.
-   * @readonly
+   * Canonical, URL-friendly version of the role name.
    */
   @Expose()
-  get userIds(): string[] {
-    if (!Array.isArray(this.users)) return [];
-    return this.users.filter((u) => !!u && typeof u.id === 'string').map((u) => u.id);
+  get slug(): string {
+    const base = typeof this.name === 'string' ? this.name : '';
+    return base.trim().toLowerCase().replace(/\s+/g, '-');
   }
 
   /**
-   * Array of permission names assigned to this role.
-   * @readonly
+   * Read-only list of permission names for this role.
+   * Always returns string[], never any[].
    */
   @Expose()
   get permissionNames(): string[] {
     if (!Array.isArray(this.permissions)) return [];
-    return this.permissions
-      .filter((p): p is Permission & { name: string } => !!p && typeof (p as any).name === 'string')
-      .map((p) => (p as any).name);
+    return this.permissions.map((perm: Permission) => perm.name);
+  }
+
+  /**
+   * Count of permissions on this role.
+   */
+  @Expose()
+  get permissionCount(): number {
+    return Array.isArray(this.permissions) ? this.permissions.length : 0;
   }
 }
