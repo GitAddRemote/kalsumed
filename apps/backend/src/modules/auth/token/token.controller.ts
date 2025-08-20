@@ -1,4 +1,17 @@
-// apps/backend/src/modules/auth/token/token.controller.ts
+/**
+ * @file apps/backend/src/modules/auth/token/token.controller.ts
+ * @summary Token endpoints for login, refresh, and logout with strict typing.
+ * @module Auth/Tokens/TokenController
+ * @description
+ *   - `POST /auth/login`: verifies credentials and returns access/refresh tokens
+ *   - `POST /auth/refresh`: exchanges a valid refresh token for new tokens
+ *   - `POST /auth/logout`: revokes the current refresh token
+ * @author
+ *   Demian (GitAddRemote)
+ * @copyright
+ *   (c) 2025 Presstronic Studios LLC
+ */
+
 import {
   Controller,
   Post,
@@ -12,14 +25,16 @@ import {
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Request } from 'express';
 import { TokenService } from './token.service';
-import { AuthService } from '../auth.service';  // ✅ Add AuthService import
+import { AuthService } from '../auth.service';
 import { LoginDto } from '../dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { TokensDto } from './dto/token.dto';
 import { JwtRefreshGuard } from '../guards/jwt-refresh.guard';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
-// Define authenticated request types
+/**
+ * Authenticated request shape injected by JWT guards.
+ */
 interface AuthenticatedRequest extends Request {
   user: {
     userId: string;
@@ -27,14 +42,31 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
+/**
+ * JWT payload used by token generation helpers.
+ */
+interface JwtPayload {
+  sub: string;
+  username?: string;
+}
+
 @ApiTags('auth')
 @Controller('auth')
 export class TokenController {
+  /**
+   * @class TokenController
+   * @classdesc Exposes login, refresh, and logout endpoints. Uses TokenService for
+   * token creation/validation and AuthService for user credential verification.
+   */
   constructor(
     private readonly tokenService: TokenService,
-    private readonly authService: AuthService,  // ✅ Inject AuthService
+    private readonly authService: AuthService,
   ) {}
 
+  /**
+   * Log in with username/password and receive access & refresh tokens.
+   * @route POST /auth/login
+   */
   @Post('login')
   @HttpCode(200)
   @ApiOperation({ summary: 'Log in and receive access & refresh tokens' })
@@ -44,7 +76,7 @@ export class TokenController {
     dto: LoginDto,
   ): Promise<TokensDto> {
     const user = await this.validateUser(dto.username, dto.password);
-    const payload = { sub: user.id, username: user.username };
+    const payload: JwtPayload = { sub: user.id, username: user.username };
 
     return {
       accessToken: this.tokenService.generateAccessToken(payload),
@@ -52,47 +84,59 @@ export class TokenController {
     };
   }
 
+  /**
+   * Exchange a valid refresh token for new tokens.
+   * NOTE: Not marked `async` because there is nothing to await.
+   * @route POST /auth/refresh
+   */
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   @HttpCode(200)
   @ApiOperation({ summary: 'Exchange a valid refresh token for new tokens' })
   @ApiResponse({ status: 200, type: TokensDto })
-  async refresh(
+  refresh(
     @Body(new ValidationPipe({ whitelist: true, transform: true }))
     dto: RefreshTokenDto,
-    @Req() req: AuthenticatedRequest,  // ✅ Use typed request
-  ): Promise<TokensDto> {
+    @Req() req: AuthenticatedRequest,
+  ): TokensDto {
     const userId = req.user.userId;
+
+    // Throws if invalid/expired/mismatched
     this.tokenService.validateRefreshToken(dto.refreshToken, userId);
 
-    const payload = { sub: userId };
+    const payload: JwtPayload = { sub: userId };
     return {
       accessToken: this.tokenService.generateAccessToken(payload),
       refreshToken: this.tokenService.generateRefreshToken(payload),
     };
+    // ✅ No `async` + no `await` ⇒ linter satisfied
   }
 
-  // Example logout endpoint (revokes refresh tokens)
+  /**
+   * Revoke the current refresh token (logout).
+   * NOTE: Synchronous; no `async` needed.
+   * @route POST /auth/logout
+   */
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(204)
   @ApiOperation({ summary: 'Revoke current refresh token (logout)' })
-  logout(@Req() req: AuthenticatedRequest): void {  // ✅ Use typed request
+  logout(@Req() req: AuthenticatedRequest): void {
     this.tokenService.revokeRefreshToken(req.user.userId);
   }
 
-  // ✅ Real implementation using AuthService
+  /**
+   * Validate user credentials with AuthService.
+   * @throws UnauthorizedException when credentials are invalid.
+   */
   private async validateUser(
-    username: string, 
-    password: string
+    username: string,
+    password: string,
   ): Promise<{ id: string; username: string; email: string }> {
-    // Use the AuthService validateUser method you already have
     const user = await this.authService.validateUser(username, password);
-    
     if (!user) {
       throw new UnauthorizedException('Invalid username or password');
     }
-
     return {
       id: user.id,
       username: user.username,
