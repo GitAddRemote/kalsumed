@@ -7,6 +7,7 @@
  *    a Nest application context, or a TypeORM DataSource.
  *  - Uniform logging wrappers and safe error extractors.
  *  - ESLint-friendly: no `any`, no unsafe member access, no unnecessary assertions.
+ *    Ensures promise rejections are always `Error` instances.
  * @author
  *  Demian (GitAddRemote)
  * @copyright
@@ -75,20 +76,33 @@ export async function withMigrationLog<T>(
     logger.timeEnd?.(label);
     logger.error(`[FAIL] ${label}: ${message}`);
     if (stack) logger.error(stack);
+    // Always rethrow an Error instance to satisfy prefer-promise-reject-errors.
     throw (err instanceof Error ? err : new Error(message));
   }
 }
 
 /**
- * Convenience helper to wrap sync steps while keeping a consistent API.
- * (No `async` here ⇒ satisfies `require-await`.)
+ * Wrap a synchronous step in a promise and delegate to `withMigrationLog`.
+ * Ensures rejections are always `Error` instances (satisfies prefer-promise-reject-errors).
  */
 export function withMigrationLogSync<T>(
   label: string,
   task: () => T,
   logger: LoggerLike = console,
 ): Promise<T> {
-  return withMigrationLog(label, () => Promise.resolve(task()), logger);
+  return withMigrationLog(
+    label,
+    () =>
+      new Promise<T>((resolve, reject) => {
+        try {
+          const value = task();
+          resolve(value);
+        } catch (e: unknown) {
+          reject(e instanceof Error ? e : new Error(getErrorMessage(e)));
+        }
+      }),
+    logger,
+  );
 }
 
 /** Pick a DataSource export from the ../data-source module safely (no casts). */
@@ -96,10 +110,9 @@ function pickDataSource(mod: unknown): DataSource {
   if (!isRecord(mod)) {
     throw new Error('Invalid data-source module export.');
   }
-  const rec = mod; // narrowed to UnknownRecord by isRecord
-  for (const key of Object.keys(rec)) {
-    const candidate = rec[key];
-    if (candidate instanceof DataSource) return candidate;
+  for (const key of Object.keys(mod)) {
+    const candidate = mod[key];
+    if (candidate instanceof DataSource) return candidate as DataSource;
   }
   throw new Error('No DataSource instance exported by ../data-source.');
 }
