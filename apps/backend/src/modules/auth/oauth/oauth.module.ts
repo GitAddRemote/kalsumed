@@ -11,6 +11,7 @@ import { User } from '../../user/entities/user.entity';
 import { GoogleStrategy } from '../strategies/google.strategy';
 import { AppleStrategy } from '../strategies/apple.strategy';
 import { UserModule } from 'src/modules/user/user.module';
+import {AuthModule} from "../auth.module";
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { UserModule } from 'src/modules/user/user.module';
       inject: [ConfigService],
     }),
     TypeOrmModule.forFeature([OAuthAccount, User]),
-    UserModule, // <-- This is needed for UserService injection
+    UserModule,
+    AuthModule,
   ],
   controllers: [OAuthController],
   providers: [

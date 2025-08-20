@@ -9,8 +9,10 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   try {
     logger.log('Starting application bootstrap...');
-    await runMigrations();
-    
+    if (process.env.RUN_MIGRATIONS_ON_BOOT === 'true') {
+      await runMigrations();
+    }
+
     logger.log('Creating NestJS application...');
     const app = await NestFactory.create(AppModule);
 

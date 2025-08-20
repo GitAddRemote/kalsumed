@@ -1,3 +1,11 @@
+/**
+ * SeederService for initializing permissions, roles, and a default admin user in the database.
+ *
+ * @file apps/backend/src/modules/database/seeder.service.ts
+ * @author Demian (GitAddRemote)
+ * @copyright (c) 2025 Presstronic Studios LLC
+ * @description Handles seeding of permissions, roles, and admin user for the backend application.
+ */
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DataSource, Repository, In } from 'typeorm';
 import { Role } from '../role/entities/role.entity';
@@ -6,13 +14,23 @@ import { User } from '../user/entities/user.entity';
 import { UserRole } from '../user/entities/user-role.entity';
 import * as bcrypt from 'bcrypt';
 
+/**
+ * Definition for a role to be seeded, including its permissions.
+ */
 interface RoleSeedDef {
+  /** Name of the role */
   name: string;
-  description?: string;
+  /** Optional description of the role */
+  description?: string | null;
+  /** Whether the role is active */
   isActive?: boolean;
+  /** List of permission names for the role */
   permissions?: string[];
 }
 
+/**
+ * SeederService is responsible for seeding permissions, roles, and a default admin user.
+ */
 @Injectable()
 export class SeederService implements OnModuleInit {
   private readonly logger = new Logger(SeederService.name);
@@ -22,27 +40,46 @@ export class SeederService implements OnModuleInit {
   private userRepository!: Repository<User>;
   private userRoleRepository!: Repository<UserRole>;
 
+  /**
+   * Constructs the SeederService with a TypeORM DataSource.
+   * @param dataSource The TypeORM DataSource instance.
+   */
   constructor(private readonly dataSource: DataSource) {}
 
+  /**
+   * Runs the seeder logic on module initialization.
+   */
   async onModuleInit(): Promise<void> {
-    this.roleRepository = this.dataSource.getRepository(Role);
-    this.permissionRepository = this.dataSource.getRepository(Permission);
-    this.userRepository = this.dataSource.getRepository(User);
-    this.userRoleRepository = this.dataSource.getRepository(UserRole);
+    await this.run();
+  }
 
-    if (process.env.NODE_ENV === 'development' || process.env.ENABLE_SEEDING === 'true') {
-      try {
-        await this.seedRoles();
+  /**
+   * Main entry point for running all seed operations in a transaction.
+   * Seeds permissions, roles, and the default admin user.
+   */
+  async run(): Promise<void> {
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        this.roleRepository = manager.getRepository(Role);
+        this.permissionRepository = manager.getRepository(Permission);
+        this.userRepository = manager.getRepository(User);
+        this.userRoleRepository = manager.getRepository(UserRole);
+
+        const permissionMap = await this.upsertPermissions();
+        await this.seedRoles(permissionMap);
         await this.seedDefaultAdmin();
-        this.logger.log('Seeding complete');
-      } catch (e) {
-        this.logger.error('Seeding failed', e as Error);
-      }
-    } else {
-      this.logger.log('Seeding disabled (env conditions not met)');
+      });
+
+      this.logger.log('Seeding complete');
+    } catch (e: unknown) {
+      this.logger.error('Seeding failed', e instanceof Error ? e : new Error('Unknown error'));
+      throw e;
     }
   }
 
+  /**
+   * List of roles to seed, including their permissions.
+   */
   private readonly rolesToSeed: RoleSeedDef[] = [
     {
       name: 'user',
@@ -70,40 +107,75 @@ export class SeederService implements OnModuleInit {
     },
   ];
 
-  private async seedRoles(): Promise<void> {
+  /**
+   * Ensures all permissions required by roles exist in the database.
+   * Creates any missing permissions and returns a map of permission name to Permission entity.
+   * @returns Map of permission names to Permission entities.
+   */
+  private async upsertPermissions(): Promise<Map<string, Permission>> {
+    // Collect all permission names from rolesToSeed
+    const names = new Set<string>();
+    for (const role of this.rolesToSeed) (role.permissions ?? []).forEach((p) => names.add(p));
+    const allNames = Array.from(names);
+    if (!allNames.length) return new Map();
+
+    // Find existing permissions
+    const existing = await this.permissionRepository.find({ where: { name: In(allNames) } });
+    const byName = new Map<string, Permission>(existing.map((p) => [p.name, p]));
+
+    // Find missing permissions
+    const missing = allNames.filter((n) => !byName.has(n));
+    if (missing.length) {
+      const created = await this.permissionRepository.save(
+        missing.map((n) => this.permissionRepository.create({ name: n }))
+      );
+      created.forEach((p) => byName.set(p.name, p));
+      this.logger.log(`Created ${created.length} permission(s): ${missing.join(', ')}`);
+    } else {
+      this.logger.debug('No missing permissions to create');
+    }
+
+    return byName;
+  }
+
+  /**
+   * Seeds roles and their permissions into the database.
+   * Updates existing roles if their permissions or properties have changed.
+   * @param permissionMap Map of permission names to Permission entities.
+   */
+  private async seedRoles(permissionMap: Map<string, Permission>): Promise<void> {
     for (const def of this.rolesToSeed) {
       if (!def.name) continue;
+
+      const permsForRole = (def.permissions ?? [])
+        .map((n) => permissionMap.get(n))
+        .filter(Boolean) as Permission[];
 
       const existing = await this.roleRepository.findOne({
         where: { name: def.name },
         relations: ['permissions'],
       });
 
-      // Fetch Permission entities for this role
-      let permissions: Permission[] = [];
-      if (def.permissions?.length) {
-        permissions = await this.permissionRepository.find({
-          where: { name: In(def.permissions) },
-        });
-      }
-
       if (existing) {
         let dirty = false;
-        if (def.description && existing.description !== def.description) {
-          existing.description = def.description;
+
+        if (typeof def.description !== 'undefined' && existing.description !== def.description) {
+          existing.description = def.description ?? null;
           dirty = true;
         }
-        if (
-          def.permissions &&
-          (existing.permissions?.map(p => p.name).sort().join(',') !== permissions.map(p => p.name).sort().join(','))
-        ) {
-          existing.permissions = permissions;
+
+        const existingPerms = (existing.permissions ?? []).map((p) => p.name).sort().join(',');
+        const newPerms = permsForRole.map((p) => p.name).sort().join(',');
+        if ((def.permissions?.length ?? 0) > 0 && existingPerms !== newPerms) {
+          existing.permissions = permsForRole;
           dirty = true;
         }
+
         if (typeof def.isActive === 'boolean' && existing.isActive !== def.isActive) {
           existing.isActive = def.isActive;
           dirty = true;
         }
+
         if (dirty) {
           await this.roleRepository.save(existing);
           this.logger.log(`Updated role: ${def.name}`);
@@ -115,7 +187,7 @@ export class SeederService implements OnModuleInit {
           name: def.name,
           description: def.description ?? null,
           isActive: def.isActive ?? true,
-          permissions,
+          permissions: permsForRole,
         });
         await this.roleRepository.save(role);
         this.logger.log(`Created role: ${def.name}`);
@@ -123,10 +195,15 @@ export class SeederService implements OnModuleInit {
     }
   }
 
+  /**
+   * Seeds a default admin user with the `org_admin` role if one does not already exist.
+   * Uses the password from the `ADMIN_DEFAULT_PASSWORD` environment variable, or a default in development.
+   * Throws an error if no password is set in production.
+   */
   private async seedDefaultAdmin(): Promise<void> {
     const email = 'admin@kalsumed.com';
-    const exists = await this.userRepository.findOne({ where: { email } });
-    if (exists) {
+    const existing = await this.userRepository.findOne({ where: { email } });
+    if (existing) {
       this.logger.log('Admin user already exists, skipping');
       return;
     }
@@ -137,7 +214,16 @@ export class SeederService implements OnModuleInit {
       return;
     }
 
-    const passwordHash = await bcrypt.hash('admin123', 10);
+    const isProd = process.env.NODE_ENV === 'production';
+    const rawFromEnv = process.env.ADMIN_DEFAULT_PASSWORD;
+    const rawPassword = rawFromEnv ?? (isProd ? null : 'admin123');
+    if (!rawPassword) {
+      throw new Error('ADMIN_DEFAULT_PASSWORD is required when seeding in production.');
+    }
+
+    const saltRounds = Number(process.env.ADMIN_PASSWORD_SALT_ROUNDS ?? 10);
+    const passwordHash = await bcrypt.hash(rawPassword, saltRounds);
+
     const adminUser = this.userRepository.create({
       username: 'admin',
       email,

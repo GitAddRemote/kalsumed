@@ -9,5 +9,11 @@
     "emitDecoratorMetadata": true,
     "importHelpers": false
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/migrations/**/*"],
+  "watchOptions": {
+    "excludeDirectories": [
+      "src/migrations"
+    ]
+  }
 }

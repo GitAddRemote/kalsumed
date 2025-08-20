@@ -8,7 +8,7 @@
     "isolatedModules": false,
     "baseUrl": ".",
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "src",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -24,6 +24,6 @@
     "strict": false,
     "noImplicitAny": false
   },
-  "include": ["src/**/*.ts", "data-source.ts"],
-  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.e2e-spec.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.e2e-spec.ts", "src/migrations/**/*"]
 }

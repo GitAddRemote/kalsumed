@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
-    "tsConfigPath": "tsconfig.json"
+    "tsConfigPath": "tsconfig.build.json"
+  },
+  "watchOptions": {
+    "ignore": ["src/migrations/**/*"]
   }
 }

@@ -20,13 +20,14 @@ COPY apps/backend/tsconfig.build.json tsconfig.build.json
 COPY apps/backend/nest-cli.json nest-cli.json
 COPY apps/backend/src src/
 
-# Debug step - check TypeScript version and config
+# Debug step - check TypeScript version and config (optional)
 RUN pnpm exec tsc --version
 RUN cat tsconfig.json
 RUN cat tsconfig.build.json
 
-# 6. build
+# 6. build once (optional for faster hot-starts; app still runs in watch mode)
 RUN pnpm run build
 
 # 7. dev entrypoint
-CMD ["pnpm", "--filter", "@kalsumed/backend", "dev"]
+# Since docker-compose sets working_dir to /usr/src/apps/backend, keep it simple:
+CMD ["pnpm", "run", "dev"]
