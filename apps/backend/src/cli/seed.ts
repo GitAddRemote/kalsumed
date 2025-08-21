@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
-import { SeedModule } from './seed.module';
-import { SeederService } from '../modules/database/seeder.service';
+import { SeedModule } from './seed.module.js';
+import { SeederService } from '../modules/database/seeder.service.js';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(SeedModule, {
@@ -23,4 +23,4 @@ async function bootstrap() {
   }
 }
 
-bootstrap();
+await bootstrap();

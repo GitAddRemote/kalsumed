@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
+    "module": "NodeNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "moduleResolution": "bundler",
+    "moduleResolution": "NodeNext",
     "allowImportingTsExtensions": false,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
-    
+
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
@@ -17,15 +17,15 @@
     "strictNullChecks": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
-    
+
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    
+
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    
+
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
-import { User } from '../user/entities/user.entity';
-import { UserRole } from './entities/user-role.entity';
-import { Role } from '../role/entities/role.entity';
+import { User } from '../user/entities/user.entity.js';
+import { UserRole } from './entities/user-role.entity.js';
+import { Role } from '../role/entities/role.entity.js';
 
 @Injectable()
 export class UserRepository {
@@ -17,7 +17,7 @@ export class UserRepository {
     this.userRoleRepo = this.dataSource.getRepository(UserRole);
     this.roleRepo = this.dataSource.getRepository(Role);
   }
-  
+
   findAll(): Promise<User[]> {
     return this.repo.find();
   }

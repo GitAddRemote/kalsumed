@@ -1,7 +1,7 @@
 // apps/backend/src/modules/permission/permission.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PermissionRepository } from './permission.repository';
-import { Permission } from './entities/permission.entity';
+import { PermissionRepository } from './permission.repository.js';
+import { Permission } from './entities/permission.entity.js';
 
 @Injectable()
 export class PermissionService {

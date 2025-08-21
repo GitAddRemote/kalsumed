@@ -3,12 +3,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 
-import jwtConfig from './config/jwt.config';
-import { JwtStrategy } from './token/strategies/jwt.strategy';
+import jwtConfig from './config/jwt.config.js';
+import { JwtStrategy } from './token/strategies/jwt.strategy.js';
 
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { UserModule } from '../user/user.module';
+import { AuthService } from './auth.service.js';
+import { AuthController } from './auth.controller.js';
+import { UserModule } from '../user/user.module.js';
 
 @Module({
   imports: [

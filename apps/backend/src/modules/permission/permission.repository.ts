@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, Repository, In } from 'typeorm';
-import { Permission } from './entities/permission.entity';
+import { Permission } from './entities/permission.entity.js';
 
 @Injectable()
 export class PermissionRepository extends Repository<Permission> {

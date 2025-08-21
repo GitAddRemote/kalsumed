@@ -25,7 +25,7 @@ import {
   Index,
 } from 'typeorm';
 import { Expose } from 'class-transformer';
-import { Permission } from '../../permission/entities/permission.entity';
+import { Permission } from '../../permission/entities/permission.entity.js';
 
 @Entity()
 export class Role {

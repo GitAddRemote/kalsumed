@@ -15,9 +15,9 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TokenController } from './token.controller';
-import { TokenService } from './token.service';
-import { AuthModule } from '../auth.module';
+import { TokenController } from './token.controller.js';
+import { TokenService } from './token.service.js';
+import { AuthModule } from '../auth.module.js';
 
 @Module({
   imports: [

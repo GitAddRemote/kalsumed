@@ -133,7 +133,7 @@ export async function runMigrations(
     ds = appOrDs.get(DataSource);
   } else {
     // Zero-arg mode: dynamically import ../data-source and pick the DataSource export.
-    const mod: unknown = await import('../data-source');
+    const mod: unknown = await import('../data-source.js');
     ds = pickDataSource(mod);
   }
 

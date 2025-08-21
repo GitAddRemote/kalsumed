@@ -2,12 +2,13 @@
   "name": "@kalsumed/backend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "jest",
-    "migration:dryrun": "DOTENV_CONFIG_PATH=.env.dev ts-node -r dotenv/config -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/data-source.ts --dr --pretty",
+    "migration:dryrun": "DOTENV_CONFIG_PATH=.env.development ts-node -r dotenv/config -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/data-source.ts --dr --pretty",
     "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/data-source.ts",
     "migration:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/data-source.ts",
     "migration:gen:docker": "docker compose -f ../../docker-compose.dev.yml exec backend pnpm run migration:gen --pretty",
@@ -15,11 +16,11 @@
     "migration:revert:docker": "docker compose -f ../../docker-compose.dev.yml exec backend pnpm run migration:revert",
     "migration:run:ts": "TS_NODE_PROJECT=tsconfig.typeorm.json ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/data-source.cli.ts",
     "migration:show:ts": "TS_NODE_PROJECT=tsconfig.typeorm.json ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d src/data-source.cli.ts",
-    "migration:gen:name": "TS_NODE_PROJECT=tsconfig.typeorm.json NAME=${npm_config_name:-Migration} DOTENV_CONFIG_PATH=.env.dev ts-node -r dotenv/config -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate src/migrations/$NAME -d src/data-source.ts --pretty",
-    "migration:gen:static": "TS_NODE_PROJECT=tsconfig.typeorm.json DOTENV_CONFIG_PATH=.env.dev ts-node -r dotenv/config -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate src/migrations/InitialMigration -d src/data-source.ts --pretty",
-    "migration:gen": "TS_NODE_PROJECT=tsconfig.typeorm.json DOTENV_CONFIG_PATH=.env.dev ts-node -r dotenv/config -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate src/migrations/Migration -d src/data-source.ts --pretty",
+    "migration:gen:name": "TS_NODE_PROJECT=tsconfig.typeorm.json NAME=${npm_config_name:-Migration} DOTENV_CONFIG_PATH=.env.development ts-node -r dotenv/config -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate src/migrations/$NAME -d src/data-source.ts --pretty",
+    "migration:gen:static": "TS_NODE_PROJECT=tsconfig.typeorm.json DOTENV_CONFIG_PATH=.env.development ts-node -r dotenv/config -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate src/migrations/InitialMigration -d src/data-source.ts --pretty",
+    "migration:gen": "TS_NODE_PROJECT=tsconfig.typeorm.json DOTENV_CONFIG_PATH=.env.development ts-node -r dotenv/config -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate src/migrations/Migration -d src/data-source.ts --pretty",
 
-    "seed:run": "DOTENV_CONFIG_PATH=.env.dev ts-node -r dotenv/config -r tsconfig-paths/register src/cli/seed.ts"
+    "seed:run": "DOTENV_CONFIG_PATH=.env.development ts-node -r dotenv/config -r tsconfig-paths/register src/cli/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

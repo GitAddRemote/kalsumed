@@ -1,8 +1,8 @@
 // apps/backend/src/modules/user/user.service.ts
 
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserRepository } from './user.repository';
-import { User } from '../user/entities/user.entity';
+import { UserRepository } from './user.repository.js';
+import { User } from '../user/entities/user.entity.js';
 
 @Injectable()
 export class UserService {
@@ -44,7 +44,7 @@ export class UserService {
    */
   async findByUsername(username: string): Promise<User | null> {
     return this.users.findByUsername(username);
-  }  
+  }
 
   /**
    * Retrieve a single user by email

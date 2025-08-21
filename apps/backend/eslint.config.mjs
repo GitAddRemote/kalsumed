@@ -1,8 +1,12 @@
-// apps/backend/eslint.config.mjs
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default [
+  // ✅ Added: ignore generated migrations
+  {
+    ignores: ['src/migrations/**'],
+  },
+
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

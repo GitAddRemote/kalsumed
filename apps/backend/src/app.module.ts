@@ -2,28 +2,34 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
-import { RedisModule } from './modules/redis/redis.module';
-import { DatabaseModule } from './modules/database/database.module';
-import { HealthModule } from './modules/health/health.module';
-import { UserModule } from './modules/user/user.module';
-import { RoleModule } from './modules/role/role.module';
-import { SessionModule } from './modules/auth/session/session.module';
-import { TokenModule } from './modules/auth/token/token.module';
-import * as path from 'path';
-import * as Joi from 'joi';
-import jwtConfig, { jwtConfigValidationSchema } from './modules/auth/config/jwt.config';
-import seedingConfig, { seedingConfigSchema } from './modules/database/seeding.config';
-import { OAuthModule } from './modules/auth/oauth/oauth.module';
+import { RedisModule } from './modules/redis/redis.module.js';
+import { DatabaseModule } from './modules/database/database.module.js';
+import { HealthModule } from './modules/health/health.module.js';
+import { UserModule } from './modules/user/user.module.js';
+import { RoleModule } from './modules/role/role.module.js';
+import { SessionModule } from './modules/auth/session/session.module.js';
+import { TokenModule } from './modules/auth/token/token.module.js';
+import { resolve } from 'node:path';
+import Joi from 'joi';
+import jwtConfig, { jwtConfigValidationSchema } from './modules/auth/config/jwt.config.js';
+import seedingConfig, { seedingConfigSchema } from './modules/database/seeding.config.js';
+import { OAuthModule } from './modules/auth/oauth/oauth.module.js';
+
+const fromRoot = (p: string) => resolve(process.cwd(), p);
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      cache: true,
+      expandVariables: true,
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
       load: [jwtConfig, seedingConfig],
-      // Resolve for both ts-node (src) and dist builds
       envFilePath: [
-        path.resolve(process.cwd(), '.env.dev'),
-        path.resolve(__dirname, '..', '.env.dev'),
+        fromRoot(`.env.${process.env.NODE_ENV}.local`),
+        fromRoot(`.env.${process.env.NODE_ENV}`),
+        fromRoot('.env.local'),
+        fromRoot('.env'),
       ],
       validationSchema: Joi.object({
         DATABASE_HOST: Joi.string().required(),

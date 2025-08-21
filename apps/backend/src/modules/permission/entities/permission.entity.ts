@@ -14,7 +14,7 @@ import {
   Index,
   ManyToMany,
 } from 'typeorm';
-import { Role } from '../../role/entities/role.entity';
+import { Role } from '../../role/entities/role.entity.js';
 
 /**
  * Entity representing a permission that can be assigned to roles.

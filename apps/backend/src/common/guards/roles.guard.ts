@@ -1,4 +1,3 @@
-// apps/backend/src/common/guards/roles.guard.ts
 import {
   Injectable,
   CanActivate,
@@ -6,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ROLES_KEY } from '../decorators/roles.decorator';
+import { ROLES_KEY } from '../decorators/roles.decorator.js';
 
 interface Role {
   name: string;

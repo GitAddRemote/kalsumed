@@ -10,11 +10,11 @@ import {
   Column,
   ManyToOne,
   Unique,
-  Index,
+  Index, type Relation,
 } from 'typeorm';
 import { Expose } from 'class-transformer';
-import { User } from './user.entity';
-import { Role } from '../../role/entities/role.entity';
+import { User } from './user.entity.js';
+import { Role } from '../../role/entities/role.entity.js';
 
 /**
  * Entity representing the assignment of a role to a user.
@@ -55,7 +55,7 @@ export class UserRole {
     onDelete: 'CASCADE',
     nullable: false,
   })
-  user!: User;
+  user!: Relation<User>;
 
   /**
    * Role entity relation.

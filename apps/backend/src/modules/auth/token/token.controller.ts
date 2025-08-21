@@ -24,13 +24,13 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Request } from 'express';
-import { TokenService } from './token.service';
-import { AuthService } from '../auth.service';
-import { LoginDto } from '../dto/login.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { TokensDto } from './dto/token.dto';
-import { JwtRefreshGuard } from '../guards/jwt-refresh.guard';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { TokenService } from './token.service.js';
+import { AuthService } from '../auth.service.js';
+import { LoginDto } from '../dto/login.dto.js';
+import { RefreshTokenDto } from './dto/refresh-token.dto.js';
+import { TokensDto } from './dto/token.dto.js';
+import { JwtRefreshGuard } from '../guards/jwt-refresh.guard.js';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
 
 /**
  * Authenticated request shape injected by JWT guards.

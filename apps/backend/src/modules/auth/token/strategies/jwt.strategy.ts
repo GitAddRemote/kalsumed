@@ -6,7 +6,7 @@ import {
   ExtractJwt,
   StrategyOptionsWithoutRequest,
 } from 'passport-jwt';
-import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { JwtPayload } from '../interfaces/jwt-payload.interface.js';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {

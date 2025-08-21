@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Role } from './entities/role.entity';
-import { RoleRepository } from './role.repository';
-import { RoleService } from './role.service';
-import { RoleController } from './role.controller';
-import { PermissionModule } from '../permission/permission.module';
+import { Role } from './entities/role.entity.js';
+import { RoleRepository } from './role.repository.js';
+import { RoleService } from './role.service.js';
+import { RoleController } from './role.controller.js';
+import { PermissionModule } from '../permission/permission.module.js';
 
 @Module({
   imports: [

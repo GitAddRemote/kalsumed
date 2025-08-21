@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule } from './app.module.js';
 import { Logger } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
-import { runMigrations } from './utils/migration.util';
+import { runMigrations } from './utils/migration.util.js';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -33,8 +33,12 @@ async function bootstrap() {
     logger.log(`🚀 Backend running on http://localhost:${port}/api`);
   }
   catch (error) {
-    logger.error('❌ Error during bootstrap:', error.message);
-    logger.error('Stack trace:', error.stack);
+    if (error instanceof Error) {
+      logger.error('❌ Error during bootstrap:', error.message);
+      logger.error('Stack trace:', error.stack);
+    } else {
+      logger.error('❌ Error during bootstrap:', JSON.stringify(error));
+    }
     process.exit(1);
   }
 }

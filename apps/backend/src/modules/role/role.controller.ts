@@ -10,12 +10,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { RoleService } from './role.service';
-import { CreateRoleDto } from './dto/create-role.dto';
-import { UpdateRoleDto } from './dto/update-role.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { RoleService } from './role.service.js';
+import { CreateRoleDto } from './dto/create-role.dto.js';
+import { UpdateRoleDto } from './dto/update-role.dto.js';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../../common/guards/roles.guard.js';
+import { Roles } from '../../common/decorators/roles.decorator.js';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
@@ -23,8 +23,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
-  /** 
-   * List all roles 
+  /**
+   * List all roles
    */
   @Get()
   async listAll() {

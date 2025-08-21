@@ -1,22 +1,18 @@
-// apps/backend/src/modules/auth/oauth/oauth.controller.ts
-
 import {
   Controller,
   Get,
   Req,
   Res,
   UseGuards,
-  Query,
-  Headers,
-  Session,
-  Param
+  Logger
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
-import { OAuthService } from './oauth.service';
+import { OAuthService } from './oauth.service.js';
 
 @Controller('auth/oauth')
 export class OAuthController {
+  private readonly logger = new Logger(OAuthController.name);
   constructor(private readonly _oauthService: OAuthService) {}
 
   // Initiate Google OAuth2 flow
@@ -35,7 +31,7 @@ export class OAuthController {
   ): Promise<void> {
     try {
       // The user object is attached by the Google strategy
-      const user = req.user as any; // Will be populated by GoogleStrategy
+      const user = req.user as Express.User;
 
       if (!user) {
         return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Authentication failed`);
@@ -63,28 +59,28 @@ export class OAuthController {
       return res.redirect(`${process.env.FRONTEND_URL}/auth/success`);
 
     } catch (error) {
-      console.error('Google OAuth callback error:', error);
+      this.logger.error('Google OAuth callback error:', error);
       return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Authentication failed`);
     }
   }
 
-  // Similarly, Apple OAuth2 flow
-  @Get('apple')
-  @UseGuards(AuthGuard('apple'))
-  async appleAuth(): Promise<void> {
-    throw new Error('Apple OAuth not implemented yet');
-  }
-
-  @Get('apple/callback')
-  @UseGuards(AuthGuard('apple'))
-  async appleAuthCallback(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Query() query: any,
-    @Headers() headers: any,
-    @Session() session: any,
-    @Param() params: any,
-  ): Promise<void> {
-    // Handle Apple OAuth callback
-  }
+  // // Similarly, Apple OAuth2 flow
+  // @Get('apple')
+  // @UseGuards(AuthGuard('apple'))
+  // async appleAuth(): Promise<void> {
+  //   throw new Error('Apple OAuth not implemented yet');
+  // }
+  //
+  // @Get('apple/callback')
+  // @UseGuards(AuthGuard('apple'))
+  // async appleAuthCallback(
+  //   @Req() req: Request,
+  //   @Res() res: Response,
+  //   @Query() query: any,
+  //   @Headers() headers: any,
+  //   @Session() session: any,
+  //   @Param() params: any,
+  // ): Promise<void> {
+  //   // Handle Apple OAuth callback
+  // }
 }

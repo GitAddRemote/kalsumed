@@ -18,11 +18,12 @@ import {
   BeforeUpdate,
   Index,
 } from 'typeorm';
+import type { Relation } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Exclude } from 'class-transformer';
-import { OAuthAccount } from '../../auth/entities/oauth-account.entity';
-import { UserRole } from './user-role.entity';
-import type { Role } from '../../role/entities/role.entity';
+import { OAuthAccount } from '../../auth/entities/oauth-account.entity.js';
+import { UserRole } from './user-role.entity.js';
+import type { Role } from '../../role/entities/role.entity.js';
 
 /**
  * Enum for user gender.
@@ -168,13 +169,13 @@ export class User {
    * User roles (join table).
    */
   @OneToMany(() => UserRole, (ur) => ur.user, { cascade: true })
-  userRoles!: UserRole[];
+  userRoles!: Relation<UserRole[]>;
 
   /**
    * OAuth accounts linked to the user.
    */
   @OneToMany(() => OAuthAccount, (oa) => oa.user, { cascade: true })
-  oauthAccounts!: OAuthAccount[];
+  oauthAccounts!: Relation<OAuthAccount[]>;
 
   /**
    * Last login timestamp.

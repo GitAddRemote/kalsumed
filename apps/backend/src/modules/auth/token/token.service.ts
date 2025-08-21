@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { JwtPayload } from './interfaces/jwt-payload.interface.js';
 
 @Injectable()
 export class TokenService {
@@ -38,8 +38,8 @@ export class TokenService {
 
   validateRefreshToken(token: string, userId: string): void {
     try {
-      this.jwtService.verify(token, { 
-        secret: this.configService.getOrThrow<string>('jwt.refreshSecret') 
+      this.jwtService.verify(token, {
+        secret: this.configService.getOrThrow<string>('jwt.refreshSecret')
       });
     } catch {
       throw new UnauthorizedException('Invalid refresh token');

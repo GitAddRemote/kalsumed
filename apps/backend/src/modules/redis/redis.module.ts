@@ -1,8 +1,8 @@
 import { Global, Module, OnApplicationShutdown, Logger } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { createClient } from 'redis';
-import { RedisService } from './redis.service';
-import { REDIS_CLIENT, type RedisClient } from './redis.tokens';
+import { RedisService } from './redis.service.js';
+import { REDIS_CLIENT, type RedisClient } from './redis.tokens.js';
 
 const redisClientProvider = {
   provide: REDIS_CLIENT,

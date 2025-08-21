@@ -9,10 +9,10 @@ import { Module, NestModule, MiddlewareConsumer, Inject } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import session, { SessionOptions } from 'express-session';
 import RedisStore from 'connect-redis';
-import { RedisModule } from '../../redis/redis.module';
-import { REDIS_CLIENT, type RedisClient } from '../../redis/redis.tokens';
-import { SessionService } from './session.service';
-import { SessionController } from './session.controller';
+import { RedisModule } from '../../redis/redis.module.js';
+import { REDIS_CLIENT, type RedisClient } from '../../redis/redis.tokens.js';
+import { SessionService } from './session.service.js';
+import { SessionController } from './session.controller.js';
 
 @Module({
   imports: [ConfigModule, RedisModule],

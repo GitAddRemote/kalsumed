@@ -3,8 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'node:crypto';
-import { UserService } from '../user/user.service';
-import { User } from '../user/entities/user.entity';
+import { UserService } from '../user/user.service.js';
+import { User } from '../user/entities/user.entity.js';
 
 interface JwtAccessPayload {
   sub: string;

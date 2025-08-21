@@ -1,11 +1,11 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '../user/entities/user.entity';
-import { Role } from '../role/entities/role.entity';
-import { UserRole } from '../user/entities/user-role.entity';
-import { Permission } from '../permission/entities/permission.entity';
-import { SeederService } from './seeder.service';
+import { User } from '../user/entities/user.entity.js';
+import { Role } from '../role/entities/role.entity.js';
+import { UserRole } from '../user/entities/user-role.entity.js';
+import { Permission } from '../permission/entities/permission.entity.js';
+import { SeederService } from './seeder.service.js';
 
 @Module({})
 export class DatabaseModule {

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Req, Res, HttpCode } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { SessionService } from './session.service';
+import { SessionService } from './session.service.js';
 
 @Controller('session')
 export class SessionController {

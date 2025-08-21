@@ -36,7 +36,7 @@ export class SessionService {
     return new Promise((resolve, reject) => {
       req.session.destroy(err => {
         if (err) {
-          return reject(err);
+          return reject(new Error(String(err)));
         }
         resolve();
       });

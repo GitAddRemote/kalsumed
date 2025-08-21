@@ -1,7 +1,7 @@
 // src/modules/permission/permission.controller.ts
 import { Controller, Get, Param, Post, Body, Put, Delete } from '@nestjs/common';
-import { PermissionService } from './permission.service';
-import { Permission } from './entities/permission.entity';
+import { PermissionService } from './permission.service.js';
+import { Permission } from './entities/permission.entity.js';
 
 @Controller('permissions')
 export class PermissionController {

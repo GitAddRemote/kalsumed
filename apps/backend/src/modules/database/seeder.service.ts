@@ -15,10 +15,10 @@
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DataSource, Repository, In } from 'typeorm';
-import { Role } from '../role/entities/role.entity';
-import { Permission } from '../permission/entities/permission.entity';
-import { User } from '../user/entities/user.entity';
-import { UserRole } from '../user/entities/user-role.entity';
+import { Role } from '../role/entities/role.entity.js';
+import { Permission } from '../permission/entities/permission.entity.js';
+import { User } from '../user/entities/user.entity.js';
+import { UserRole } from '../user/entities/user-role.entity.js';
 import * as bcrypt from 'bcrypt';
 
 /**
