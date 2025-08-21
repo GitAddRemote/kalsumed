@@ -1,105 +1,90 @@
+// apps/backend/src/modules/auth/oauth/oauth.controller.ts
+
 import {
   Controller,
   Get,
   Req,
   Res,
-  HttpCode,
-  HttpStatus,
   UseGuards,
-  Param,
   Query,
+  Headers,
+  Session,
+  Param
 } from '@nestjs/common';
-import { Response, Request } from 'express';
+import { AuthGuard } from '@nestjs/passport';
+import { Request, Response } from 'express';
 import { OAuthService } from './oauth.service';
-import { AuthService } from '../auth.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
-interface OAuthProfile {
-  provider: string;
-  id: string;
-  email?: string;
-  name?: string;
-  firstName?: string;
-  lastName?: string;
-  picture?: string;
-}
-
-interface OAuthRequest extends Request {
-  user: OAuthProfile;
-}
-
-@Controller('oauth')
+@Controller('auth/oauth')
 export class OAuthController {
-  constructor(
-    private readonly oauth: OAuthService,
-    private readonly auth: AuthService,
-  ) {}
+  constructor(private readonly _oauthService: OAuthService) {}
 
+  // Initiate Google OAuth2 flow
   @Get('google')
-  @HttpCode(HttpStatus.TEMPORARY_REDIRECT)
-  googleAuth(@Res() res: Response): void {
-    this.oauth.initiateGoogle(res);
+  @UseGuards(AuthGuard('google'))
+  async googleAuth(): Promise<void> {
+    // Handled by Google strategy
   }
 
+  // Google callback endpoint
   @Get('google/callback')
-  async googleCallback(@Req() req: OAuthRequest, @Res() res: Response) {
-    const user = await this.oauth.handleGoogleCallback({
-      provider: 'google',
-      id: req.user.id,
-    });
-    const tokens = await this.auth.login(user);
-    return this.oauth.finish(res, tokens);
+  @UseGuards(AuthGuard('google'))
+  async googleAuthCallback(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      // The user object is attached by the Google strategy
+      const user = req.user as any; // Will be populated by GoogleStrategy
+
+      if (!user) {
+        return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Authentication failed`);
+      }
+
+      // Generate JWT tokens for the authenticated user
+      const tokens = await this._oauthService.handleOAuthLogin(user);
+
+      // Set tokens as HTTP-only cookies for security
+      res.cookie('access_token', tokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+
+      res.cookie('refresh_token', tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      // Redirect to frontend success page
+      return res.redirect(`${process.env.FRONTEND_URL}/auth/success`);
+
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      return res.redirect(`${process.env.FRONTEND_URL}/auth/error?message=Authentication failed`);
+    }
   }
 
-  @Get('github')
-  @HttpCode(HttpStatus.TEMPORARY_REDIRECT)
-  githubAuth(@Res() res: Response): void {
-    this.oauth.initiateGithub(res);
-  }
-
-  @Get('github/callback')
-  async githubCallback(@Req() req: OAuthRequest, @Res() res: Response) {
-    const user = await this.oauth.handleGithubCallback({
-      provider: 'github',
-      id: req.user.id,
-    });
-    const tokens = await this.auth.login(user);
-    return this.oauth.finish(res, tokens);
-  }
-
+  // Similarly, Apple OAuth2 flow
   @Get('apple')
-  @HttpCode(HttpStatus.TEMPORARY_REDIRECT)
-  appleAuth(@Res() res: Response): void {
-    this.oauth.initiateApple(res);
+  @UseGuards(AuthGuard('apple'))
+  async appleAuth(): Promise<void> {
+    throw new Error('Apple OAuth not implemented yet');
   }
 
   @Get('apple/callback')
-  appleCallback(
+  @UseGuards(AuthGuard('apple'))
+  async appleAuthCallback(
     @Req() req: Request,
     @Res() res: Response,
-    @Query('code') code?: string,
-    @Query('id_token') idToken?: string,
-    @Query('state') state?: string,
-    @Query('user') rawUser?: string,
-  ) {
-    return this.oauth.handleAppleCallback({
-      req,
-      res,
-      ...(code && { code }),
-      ...(idToken && { idToken }),
-      ...(state && { state }),
-      ...(rawUser && { rawUser }),
-      issueTokens: async (user) => {
-        const tokens = await this.auth.login(user);
-        return this.oauth.finish(res, tokens);
-      },
-    });
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('unlink/:provider')
-  async unlink(@Req() req: any, @Param('provider') provider: string, @Res() res: Response) {
-    await this.oauth.unlink(req.user.sub, provider);
-    res.status(HttpStatus.NO_CONTENT).send();
+    @Query() query: any,
+    @Headers() headers: any,
+    @Session() session: any,
+    @Param() params: any,
+  ): Promise<void> {
+    // Handle Apple OAuth callback
   }
 }

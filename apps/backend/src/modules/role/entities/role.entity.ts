@@ -65,7 +65,7 @@ export class Role {
     eager: false,
   })
   @JoinTable()
-  permissions: Permission[] = [];
+  permissions: Permission[];
 
   /**
    * Timestamp when the role was created.

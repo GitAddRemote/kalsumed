@@ -7,6 +7,7 @@ import { randomBytes } from 'node:crypto';
 import { User } from '../../user/entities/user.entity';
 import { UserService } from '../../user/user.service';
 import { OAuthAccount } from '../entities/oauth-account.entity';
+import { JwtService } from '@nestjs/jwt';
 
 interface SocialProfile {
   provider: string;
@@ -38,162 +39,144 @@ export class OAuthService {
   constructor(
     @InjectRepository(OAuthAccount)
     private readonly oauthRepo: Repository<OAuthAccount>,
-    private readonly users: UserService,
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
     private readonly config: ConfigService,
   ) {}
 
-  initiateGoogle(res: Response): void {
-    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
-    const redirectUri = this.config.get<string>('GOOGLE_REDIRECT_URI');
-    if (!clientId || !redirectUri) throw new BadRequestException('Google OAuth not configured');
-    const state = this.generateState();
-    const scope = encodeURIComponent('openid email profile');
-    const url =
-      'https://accounts.google.com/o/oauth2/v2/auth' +
-      `?client_id=${encodeURIComponent(clientId)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      '&response_type=code' +
-      `&scope=${scope}` +
-      `&state=${state}`;
-    res.redirect(url);
-  }
+  /**
+   * Handle OAuth callback: find or create user, persist OAuthAccount, issue JWT cookie
+   */
+  async handleSocialLogin(profile: SocialProfile, res: Response): Promise<void> {
+    const provider = profile.provider;
+    const providerUserId = profile.id;
 
-  async handleGoogleCallback(profile: SocialProfile): Promise<User> {
-    return this.upsertUser(profile);
-  }
+    // 1. Try existing OAuthAccount → user
+    let user = await this.userService.findByOAuthAccount(provider, providerUserId);
 
-  initiateGithub(res: Response): void {
-    const clientId = this.config.get<string>('GITHUB_CLIENT_ID');
-    const redirectUri = this.config.get<string>('GITHUB_REDIRECT_URI');
-    if (!clientId || !redirectUri) throw new BadRequestException('GitHub OAuth not configured');
-    const state = this.generateState();
-    const url =
-      'https://github.com/login/oauth/authorize' +
-      `?client_id=${encodeURIComponent(clientId)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      '&scope=read:user user:email' +
-      `&state=${state}`;
-    res.redirect(url);
-  }
-
-  async handleGithubCallback(profile: SocialProfile): Promise<User> {
-    return this.upsertUser(profile);
-  }
-
-  initiateApple(res: Response): void {
-    const clientId = this.config.get<string>('APPLE_CLIENT_ID');
-    const redirectUri = this.config.get<string>('APPLE_REDIRECT_URI');
-    if (!clientId || !redirectUri) throw new BadRequestException('Apple OAuth not configured');
-    const state = this.generateState();
-    const url =
-      'https://appleid.apple.com/auth/authorize' +
-      `?client_id=${encodeURIComponent(clientId)}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      '&response_type=code%20id_token' +
-      '&response_mode=form_post' +
-      '&scope=name%20email' +
-      `&state=${state}`;
-    res.redirect(url);
-  }
-
-  async handleAppleCallback(params: AppleCallbackParams): Promise<unknown> {
-    const { rawUser, idToken, code, issueTokens } = params;
-    let email: string | undefined;
-    let givenName: string | undefined;
-    let familyName: string | undefined;
-
-    if (rawUser) {
-      try {
-        const parsed = JSON.parse(rawUser);
-        email = typeof parsed.email === 'string' ? parsed.email : undefined;
-        givenName = typeof parsed.name?.firstName === 'string' ? parsed.name.firstName : undefined;
-        familyName = typeof parsed.name?.lastName === 'string' ? parsed.name.lastName : undefined;
-      } catch {
-        /* ignore */
-      }
-    }
-
-    const name =
-      givenName || familyName
-        ? {
-          ...(givenName && { givenName }),
-          ...(familyName && { familyName }),
-        }
-        : undefined;
-
-    const synthetic: SocialProfile = {
-      provider: 'apple',
-      id: idToken || code || this.generateState(),
-      ...(email && { emails: [{ value: email }] }),
-      ...(name && { name }),
-    };
-
-    const user = await this.upsertUser(synthetic);
-    return issueTokens(user);
-  }
-
-  finish(res: Response, tokens: AuthTokens): Response {
-    const secure = this.config.get<string>('NODE_ENV') === 'production';
-    res.cookie('access_token', tokens.accessToken, {
-      httpOnly: true,
-      secure,
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000,
-    });
-    res.cookie('refresh_token', tokens.refreshToken, {
-      httpOnly: true,
-      secure,
-      sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-    const redirectUrl = this.config.get<string>('OAUTH_SUCCESS_REDIRECT') ?? '/';
-    res.redirect(redirectUrl);
-    return res;
-  }
-
-  async unlink(userId: string, provider: string): Promise<void> {
-    await this.oauthRepo
-      .createQueryBuilder()
-      .delete()
-      .where('userId = :userId AND provider = :provider', { userId, provider })
-      .execute();
-  }
-
-  private async upsertUser(profile: SocialProfile): Promise<User> {
-    const { provider, id: providerUserId, emails, accessToken, refreshToken, expiresIn } = profile;
-    let user = await this.users.findByOAuthAccount(provider, providerUserId);
-
+    // 2. If no OAuth link, try by email or create new user
     if (!user) {
-      const primaryEmail = emails?.[0]?.value;
-      if (primaryEmail) {
+      const email = profile.emails?.[0]?.value;
+      if (email) {
         try {
-          user = await this.users.getByEmail(primaryEmail);
+          user = await this.userService.getByEmail(email);
         } catch {
           user = null;
         }
       }
       if (!user) {
-        const username =
-          primaryEmail?.split('@')[0] ??
-          `${provider}_${providerUserId}`.toLowerCase();
-        const placeholder = randomBytes(12).toString('hex');
-        user = await this.users.createLocal(username, primaryEmail ?? '', placeholder);
+        // Create a new user with a random password placeholder
+        const username = email?.split('@')[0] ?? `${provider}_${providerUserId}`;
+        const randomHash = Math.random().toString(36).slice(-8);
+        user = await this.userService.createLocal(username, email ?? '', randomHash);
       }
+      // Persist OAuthAccount
+      const { accessToken, refreshToken, expiresIn } = profile;
       const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
-      const oauthAccount = this.oauthRepo.create({
+      const oauthData: Partial<OAuthAccount> = {
         user,
         provider,
         providerUserId,
-        ...(accessToken && { accessToken }),
-        ...(refreshToken && { refreshToken }),
-        ...(expiresAt && { expiresAt }),
-      });
-      await this.oauthRepo.save(oauthAccount);
+      };
+      // Only assign properties that have actual values
+      if (accessToken) {
+        oauthData.accessToken = accessToken;
+      }
+      if (refreshToken) {
+        oauthData.refreshToken = refreshToken;
+      }
+      if (expiresAt) {
+        oauthData.expiresAt = expiresAt;
+      }
+
+      const oa = this.oauthRepo.create(oauthData);
+      await this.oauthRepo.save(oa);
     }
-    return user;
+
+    // 3. Issue JWT
+    const payload = { sub: user.id, username: user.username, roles: user.roles.map(r => r.name) };
+    const token = this.jwtService.sign(payload);
+
+    // 4. Set cookie
+    const secure = this.config.get<string>('NODE_ENV') === 'production';
+    res.cookie('Authentication', token, {
+      httpOnly: true,
+      secure,
+      sameSite: 'lax',
+      maxAge: this.config.get<number>('JWT_EXPIRATION_MS') ?? 15 * 60 * 1000,
+    });
+
+    // 5. Redirect or respond
+    const redirectUrl = this.config.get<string>('OAUTH_SUCCESS_REDIRECT') ?? '/dashboard';
+    res.redirect(redirectUrl);
   }
 
-  private generateState(): string {
-    return randomBytes(16).toString('hex');
+  /**
+   * Handle OAuth login and return JWT tokens (used by controller callbacks)
+   */
+  async handleOAuthLogin(oauthUser: any): Promise<{ accessToken: string; refreshToken: string }> {
+    const provider = oauthUser.provider;
+    const providerUserId = oauthUser.id;
+
+    // 1. Try existing OAuthAccount → user
+    let user = await this.userService.findByOAuthAccount(provider, providerUserId);
+
+    // 2. If no OAuth link, try by email or create new user
+    if (!user) {
+      const email = oauthUser.emails?.[0]?.value;
+      if (email) {
+        try {
+          user = await this.userService.getByEmail(email);
+        } catch {
+          user = null;
+        }
+      }
+      if (!user) {
+        // Create a new user with a random password placeholder
+        const username = email?.split('@')[0] ?? `${provider}_${providerUserId}`;
+        const randomHash = Math.random().toString(36).slice(-8);
+        user = await this.userService.createLocal(username, email ?? '', randomHash);
+      }
+
+      // Persist OAuthAccount
+      const { accessToken, refreshToken, expiresIn } = oauthUser;
+      const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
+      const oauthData: Partial<OAuthAccount> = {
+        user,
+        provider,
+        providerUserId,
+      };
+
+      // Only assign properties that have actual values
+      if (accessToken) {
+        oauthData.accessToken = accessToken;
+      }
+      if (refreshToken) {
+        oauthData.refreshToken = refreshToken;
+      }
+      if (expiresAt) {
+        oauthData.expiresAt = expiresAt;
+      }
+
+      const oa = this.oauthRepo.create(oauthData);
+      await this.oauthRepo.save(oa);
+    }
+
+    // 3. Generate JWT tokens
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      email: user.email
+    };
+
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: this.config.get<string>('JWT_ACCESS_EXPIRES_IN') ?? '15m',
+    });
+
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d',
+    });
+
+    return { accessToken, refreshToken };
   }
 }

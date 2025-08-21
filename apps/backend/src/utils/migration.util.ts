@@ -112,7 +112,7 @@ function pickDataSource(mod: unknown): DataSource {
   }
   for (const key of Object.keys(mod)) {
     const candidate = mod[key];
-    if (candidate instanceof DataSource) return candidate as DataSource;
+    if (candidate instanceof DataSource) return candidate;
   }
   throw new Error('No DataSource instance exported by ../data-source.');
 }

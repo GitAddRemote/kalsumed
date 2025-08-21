@@ -16,7 +16,7 @@ async function bootstrap() {
     logger.log('Seeding completed from CLI.');
     process.exit(0);
   } catch (err) {
-    logger.error('Seeding failed from CLI', err as any);
+    logger.error('Seeding failed from CLI', err);
     process.exit(1);
   } finally {
     await app.close();

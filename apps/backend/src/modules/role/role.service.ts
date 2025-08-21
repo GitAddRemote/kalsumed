@@ -40,7 +40,7 @@ export class RoleService {
    */
   async create(name: string, description?: string, permissions?: string[]): Promise<Role> {
     let foundPermissions: Permission[] = [];
-    if (permissions && permissions.length) {
+    if (permissions?.length) {
       foundPermissions = await this.permissions.find({
         where: { name: In(permissions) },
       });
