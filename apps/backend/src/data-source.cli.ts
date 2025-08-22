@@ -3,7 +3,7 @@ import { DataSource } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import * as dotenv from 'dotenv';
 
-dotenv.config({ path: '.env.dev' });
+dotenv.config({ path: '.env.development' });
 
 export default new DataSource({
   type: 'postgres',

@@ -70,7 +70,7 @@ jobs:
       - name: Install dependencies (for any local scripts)
         run: pnpm install --frozen-lockfile
 
-      - name: Generate backend .env.dev
+      - name: Generate backend .env.development
         run: |
           {
             echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}";
@@ -90,8 +90,8 @@ jobs:
             echo "JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}";
             echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}";
             echo "NODE_ENV=development";
-          } > apps/backend/.env.dev
-          chmod 600 apps/backend/.env.dev
+          } > apps/backend/.env.development
+          chmod 600 apps/backend/.env.development
 
       - name: Generate frontend .env.development
         run: |
@@ -102,7 +102,7 @@ jobs:
           chmod 600 apps/frontend/.env.development
 
       - name: Build & start dev stack
-        run: docker compose --env-file apps/backend/.env.dev -f docker-compose.dev.yml up -d --build
+        run: docker compose --env-file apps/backend/.env.development -f docker-compose.dev.yml up -d --build
 
       - name: Wait for backend health endpoint
         run: |
@@ -152,7 +152,7 @@ jobs:
         if: always()
         run: |
           docker compose -f docker-compose.dev.yml down -v --remove-orphans
-          shred -u apps/backend/.env.dev || rm -f apps/backend/.env.dev
+          shred -u apps/backend/.env.development || rm -f apps/backend/.env.development
           shred -u apps/frontend/.env.development || rm -f apps/frontend/.env.development
 
       - name: Docker prune
