@@ -6,13 +6,15 @@ on:
   pull_request:
     branches: [ main ]
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
+# allow PR comments from tools like gitleaks (optional but recommended)
 permissions:
   contents: read
   id-token: write
+  pull-requests: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint-and-unit:
@@ -49,8 +51,10 @@ jobs:
     env:
       NODE_ENV: test
     steps:
-      - name: Checkout
+      - name: Checkout (full history for scans)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -89,15 +93,13 @@ jobs:
           } > apps/backend/.env.dev
           chmod 600 apps/backend/.env.dev
 
-      - name: Generate frontend .env.dev
+      - name: Generate frontend .env.development
         run: |
+          mkdir -p apps/frontend
           {
-            mkdir -p apps/frontend
-            cat > apps/frontend/.env.dev <<'EOF'
-            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
-            EOF
-          }
-          chmod 600 apps/frontend/.env.dev
+            echo "VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}";
+          } > apps/frontend/.env.development
+          chmod 600 apps/frontend/.env.development
 
       - name: Build & start dev stack
         run: docker compose --env-file apps/backend/.env.dev -f docker-compose.dev.yml up -d --build
@@ -135,18 +137,23 @@ jobs:
       - name: (Optional) Run backend tests
         run: docker compose -f docker-compose.dev.yml exec -T backend pnpm test || echo "No tests step configured"
 
-      - name: Secrets scan
+      - name: Secrets scan (Gitleaks v2)
         if: always()
         uses: gitleaks/gitleaks-action@v2
-        with:
-          args: detect --source . --no-banner
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional quality-of-life settings:
+          GITLEAKS_VERSION: "8.24.3"
+          GITLEAKS_ENABLE_SUMMARY: "true"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "true"
+          # GITLEAKS_CONFIG: .github/gitleaks.toml  # uncomment if you add a custom config
 
       - name: Tear down dev stack
         if: always()
         run: |
           docker compose -f docker-compose.dev.yml down -v --remove-orphans
           shred -u apps/backend/.env.dev || rm -f apps/backend/.env.dev
-          shred -u apps/frontend/.env.dev || rm -f apps/frontend/.env.dev
+          shred -u apps/frontend/.env.development || rm -f apps/frontend/.env.development
 
       - name: Docker prune
         if: always()
