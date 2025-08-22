@@ -29,7 +29,7 @@ Kalsumed is a multi-tenant SaaS platform for weight-loss and nutrition managemen
 
 * Node.js (>=18) & pnpm
 * Docker & Docker Compose
-* `apps/backend/.env.dev` and `apps/frontend/.env.dev` created from their respective `.env.template` files
+* `apps/backend/.env.development` and `apps/frontend/.env.development` created from their respective `.env.template` files
 
 ## Getting Started
 
@@ -49,9 +49,9 @@ Kalsumed is a multi-tenant SaaS platform for weight-loss and nutrition managemen
 3. **Configure environment**
 
    ```bash
-   cp apps/backend/.env.template apps/backend/.env.dev
-   cp apps/frontend/.env.template apps/frontend/.env.dev
-   # Edit each .env.dev file with your local settings
+   cp apps/backend/.env.template apps/backend/.env.development
+   cp apps/frontend/.env.template apps/frontend/.env.development
+   # Edit each .env.development file with your local settings
    ```
 
 4. **Run locally**

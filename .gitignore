@@ -69,7 +69,13 @@ web_modules/
 .env
 .env.*
 .env.local
-.env.dev.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.prod.local
+.env.production
+.env.production.local
 
 # All project-specific env files
 apps/*/.env
