@@ -96,6 +96,9 @@ jobs:
             echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}";
             echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}";
 
+            echo "OAUTH_GOOGLE_ENABLED=false";
+            echo "OAUTH_APPLE_ENABLED=false";
+
             # Optional URLs if referenced
             echo "DATABASE_URL=postgres://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@database:5432/${{ secrets.POSTGRES_DB }}";
 
