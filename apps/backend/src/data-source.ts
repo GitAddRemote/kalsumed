@@ -1,3 +1,11 @@
+/**
+ * @file apps/backend/src/data-source.ts
+ * @summary App/runtime DataSource (uses compiled JS files in dist).
+ * @description
+ *   - Entity/migration globs point at built JS under dist.
+ *   - `migrationsRun` is false; migrations are applied explicitly by CLI (compose/CI) before boot.
+ */
+
 import { DataSource } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import * as dotenv from 'dotenv';
@@ -13,6 +21,6 @@ export default new DataSource({
   database: process.env.DATABASE_NAME!,
   entities: ['dist/**/*.entity.js'],
   migrations: ['dist/src/migrations/*.js'],
-  migrationsRun: true,
+  migrationsRun: false,
   namingStrategy: new SnakeNamingStrategy(),
 });

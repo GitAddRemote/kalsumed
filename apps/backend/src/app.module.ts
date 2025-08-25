@@ -14,8 +14,13 @@ import Joi from 'joi';
 import jwtConfig, { jwtConfigValidationSchema } from './modules/auth/config/jwt.config.js';
 import seedingConfig, { seedingConfigSchema } from './modules/database/seeding.config.js';
 import { OAuthModule } from './modules/auth/oauth/oauth.module.js';
+import { baseEnvValidationSchema } from './config/env.validation.js'; // ← NEW
 
 const fromRoot = (p: string) => resolve(process.cwd(), p);
+
+// derive environment flags once
+const env = process.env.NODE_ENV ?? 'development';
+const isCI = !!process.env.CI;
 
 @Module({
   imports: [
@@ -23,40 +28,30 @@ const fromRoot = (p: string) => resolve(process.cwd(), p);
       isGlobal: true,
       cache: true,
       expandVariables: true,
-      ignoreEnvFile: process.env.NODE_ENV === 'production',
+
+      // only read .env files outside CI and non-production
+      ignoreEnvFile: isCI || env === 'production',
+      envFilePath: isCI
+        ? []
+        : [
+          fromRoot(`.env.${env}.local`),
+          fromRoot('.env.local'),
+          fromRoot(`.env.${env}`),
+          fromRoot('.env'),
+        ],
+
       load: [jwtConfig, seedingConfig],
-      envFilePath: [
-        fromRoot(`.env.${process.env.NODE_ENV}.local`),
-        fromRoot(`.env.${process.env.NODE_ENV}`),
-        fromRoot('.env.local'),
-        fromRoot('.env'),
-      ],
-      validationSchema: Joi.object({
-        DATABASE_HOST: Joi.string().required(),
-        DATABASE_PORT: Joi.number().default(5432),
-        DATABASE_USERNAME: Joi.string().required(),
-        DATABASE_PASSWORD: Joi.string().required(),
-        DATABASE_NAME: Joi.string().required(),
 
-        REDIS_HOST: Joi.string().required(),
-        REDIS_PORT: Joi.number().default(6379),
-        REDIS_PASSWORD: Joi.string().required(),
-
-        RABBITMQ_USER: Joi.string().optional(),
-        RABBITMQ_PASSWORD: Joi.string().optional(),
-
-        JWT_ACCESS_SECRET: Joi.string().required(),
-
-        NODE_ENV: Joi.string()
-          .valid('development', 'production', 'test')
-          .default('development'),
-        PORT: Joi.number().default(3000),
-
-        SESSION_SECRET: Joi.string().min(32).required(),
-        REDIS_URL: Joi.string().uri().required(),
-      })
+      // compose base + module-specific schemas
+      validationSchema: baseEnvValidationSchema
         .concat(jwtConfigValidationSchema)
         .concat(seedingConfigSchema),
+
+      // surface all missing keys; ignore extra keys (useful in CI/containers)
+      validationOptions: {
+        abortEarly: false,
+        allowUnknown: true,
+      },
     }),
 
     TypeOrmModule.forRootAsync({

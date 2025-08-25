@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ main ]
 
-# allow PR comments from tools like gitleaks (optional but recommended)
 permissions:
   contents: read
   id-token: write
@@ -70,39 +69,67 @@ jobs:
       - name: Install dependencies (for any local scripts)
         run: pnpm install --frozen-lockfile
 
-      - name: Generate backend .env.development
+      # Generate a .env.test for Compose interpolation AND container envs.
+      # We also mirror it to .env.development because your compose file references it via env_file.
+      - name: Generate backend .env.test and mirror to .env.development
         run: |
+          mkdir -p apps/backend
           {
-            echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}";
-            echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}";
-            echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}";
+            # App-level (what Joi validates)
             echo "DATABASE_HOST=database";
             echo "DATABASE_PORT=5432";
-            echo "DATABASE_URL=postgres://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@database:5432/${{ secrets.POSTGRES_DB }}";
-            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}";
+            echo "DATABASE_USERNAME=${{ secrets.POSTGRES_USER }}";
+            echo "DATABASE_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}";
+            echo "DATABASE_NAME=${{ secrets.POSTGRES_DB }}";
+
             echo "REDIS_HOST=redis";
             echo "REDIS_PORT=6379";
+            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}";
             echo "REDIS_URL=redis://:${{ secrets.REDIS_PASSWORD }}@redis:6379";
+
             echo "RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}";
             echo "RABBITMQ_PASSWORD=${{ secrets.RABBITMQ_PASSWORD }}";
             echo "RABBITMQ_HOST=rabbitmq";
             echo "RABBITMQ_PORT=5672";
+
             echo "JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}";
             echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}";
-            echo "NODE_ENV=development";
-          } > apps/backend/.env.development
-          chmod 600 apps/backend/.env.development
+            echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}";
 
-      - name: Generate frontend .env.development
+            # Optional URLs if referenced
+            echo "DATABASE_URL=postgres://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@database:5432/${{ secrets.POSTGRES_DB }}";
+
+            # Explicit for clarity; container env will be overridden to NODE_ENV=test via compose 'environment'
+            echo "NODE_ENV=test";
+          } > apps/backend/.env.test
+          chmod 600 apps/backend/.env.test
+          cp apps/backend/.env.test apps/backend/.env.development
+
+      - name: Generate frontend .env.test (mirrored to .env.development for compose)
         run: |
           mkdir -p apps/frontend
           {
             echo "VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}";
-          } > apps/frontend/.env.development
-          chmod 600 apps/frontend/.env.development
+          } > apps/frontend/.env.test
+          chmod 600 apps/frontend/.env.test
+          cp apps/frontend/.env.test apps/frontend/.env.development
 
       - name: Build & start dev stack
-        run: docker compose --env-file apps/backend/.env.development -f docker-compose.dev.yml up -d --build
+        run: docker compose --env-file apps/backend/.env.test -f docker-compose.dev.yml up -d --build
+
+      # 🔹 Schema drift check: fail PR if entities changed without a migration
+      - name: Check for pending schema changes (no-op generate)
+        run: |
+          set -eo pipefail
+          out="$(docker compose --env-file apps/backend/.env.test -f docker-compose.dev.yml run --rm backend \
+            pnpm -F @kalsumed/backend run migration:dryrun 2>&1 || true)"
+          echo "$out"
+          if echo "$out" | grep -qE "No changes? in (database schema|metadata) were found"; then
+            echo "Schema is up-to-date."
+          else
+            echo "::error::TypeORM reports schema changes. Generate a migration and commit it."
+            exit 1
+          fi
 
       - name: Wait for backend health endpoint
         run: |
@@ -118,7 +145,7 @@ jobs:
             sleep 2
           done
           echo "Health endpoint failed"
-          docker compose -f docker-compose.dev.yml logs backend database redis || true
+          docker compose --env-file apps/backend/.env.test -f docker-compose.dev.yml logs backend database redis || true
           exit 1
 
       - name: Install jq
@@ -135,24 +162,24 @@ jobs:
               '
 
       - name: (Optional) Run backend tests
-        run: docker compose -f docker-compose.dev.yml exec -T backend pnpm test || echo "No tests step configured"
+        run: docker compose --env-file apps/backend/.env.test -f docker-compose.dev.yml exec -T backend pnpm test || echo "No tests step configured"
 
       - name: Secrets scan (Gitleaks v2)
         if: always()
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional quality-of-life settings:
           GITLEAKS_VERSION: "8.24.3"
           GITLEAKS_ENABLE_SUMMARY: "true"
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "true"
-          # GITLEAKS_CONFIG: .github/gitleaks.toml  # uncomment if you add a custom config
 
       - name: Tear down dev stack
         if: always()
         run: |
-          docker compose -f docker-compose.dev.yml down -v --remove-orphans
+          docker compose --env-file apps/backend/.env.test -f docker-compose.dev.yml down -v --remove-orphans
+          shred -u apps/backend/.env.test || rm -f apps/backend/.env.test
           shred -u apps/backend/.env.development || rm -f apps/backend/.env.development
+          shred -u apps/frontend/.env.test || rm -f apps/frontend/.env.test
           shred -u apps/frontend/.env.development || rm -f apps/frontend/.env.development
 
       - name: Docker prune

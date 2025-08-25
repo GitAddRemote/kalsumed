@@ -4,6 +4,7 @@
  * @module Role/Entities/Role
  * @description
  *   - Defines the Role aggregate with ManyToMany → Permission.
+ *   - Explicitly maps the M:N join table to **role_permission** to avoid TypeORM defaults.
  *   - Includes `isActive` (boolean) used by the seeder and admin UIs.
  *   - Computed views (`slug`, `permissionNames`, `permissionCount`) are implemented
  *     without `any`, unsafe access, or unsafe returns and are defensive against
@@ -57,14 +58,18 @@ export class Role {
 
   /**
    * Many-to-many relation to Permission.
-   * Initialized to [] to avoid undefined at runtime and keep computed
-   * getters simple and safe.
+   * Explicit @JoinTable() mapping pins the join table to "role_permission"
+   * with snake_case FK columns, aligning with migrations and naming strategy.
    */
   @ManyToMany(() => Permission, (permission) => permission.roles, {
     cascade: false,
     eager: false,
   })
-  @JoinTable()
+  @JoinTable({
+    name: 'role_permission',
+    joinColumn: { name: 'role_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'permission_id', referencedColumnName: 'id' },
+  })
   permissions: Permission[];
 
   /**

@@ -2,12 +2,15 @@ services:
   # -- Infrastructure --
   database:
     image: postgres:15-alpine
+    # Keep this if you want the container to also receive the vars as envs.
+    # Interpolation of ${...} below still requires a top-level --env-file or a root .env.
     env_file:
       - ./apps/backend/.env.development
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-kalsumed_db}
-      POSTGRES_USER: ${POSTGRES_USER:-kalsumed}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      # Map app-level names to Postgres image expectations
+      POSTGRES_DB: ${DATABASE_NAME:-kalsumed_db}
+      POSTGRES_USER: ${DATABASE_USERNAME:-kalsumed}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-changeme}
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
@@ -82,7 +85,9 @@ services:
     env_file:
       - ./apps/backend/.env.development
     environment:
-      NODE_ENV: development
+      # Ensure Nest treats CI like prod regarding env file loading
+      CI: ${CI:-0}
+      NODE_ENV: ${NODE_ENV:-development}
       SEEDING_MODE: ${SEEDING_MODE:-auto}
       # .env.development provides: DATABASE_*, REDIS_*, SESSION_SECRET, JWT_*, SEEDING_MODE, etc.
     depends_on:
@@ -100,6 +105,12 @@ services:
     ports:
       - "3000:3000"
     restart: unless-stopped
+    # 🔹 Run migrations before starting the app (dev-only)
+    command: >
+      sh -c "
+        pnpm run migration:run &&
+        pnpm run dev
+      "
 
   # -- Frontend (Vite in watch mode) --
   frontend:
