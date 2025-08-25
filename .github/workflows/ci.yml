@@ -167,6 +167,18 @@ jobs:
       - name: (Optional) Run backend tests
         run: docker compose --env-file apps/backend/.env.test -f docker-compose.dev.yml exec -T backend pnpm test || echo "No tests step configured"
 
+      # --- Gitleaks: write a minimal config so placeholders/templates don't trip rules
+      - name: Configure Gitleaks (allow placeholders & env template)
+        run: |
+          cat > .gitleaks.toml <<'EOF'
+          title = "Kalsumed Gitleaks Rules"
+
+          [allowlist]
+          description = "Ignore placeholders and the env template file"
+          stopwords = ["REDACTED", "PLACEHOLDER", "DUMMY", "EXAMPLE"]
+          paths = ["apps/backend/.env.template"]
+          EOF
+
       - name: Secrets scan (Gitleaks v2)
         if: always()
         uses: gitleaks/gitleaks-action@v2
@@ -175,6 +187,8 @@ jobs:
           GITLEAKS_VERSION: "8.24.3"
           GITLEAKS_ENABLE_SUMMARY: "true"
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "true"
+          # Belt-and-braces: point the action at the config we just wrote
+          GITLEAKS_CONFIG: ".gitleaks.toml"
 
       - name: Tear down dev stack
         if: always()

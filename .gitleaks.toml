@@ -1,0 +1,10 @@
+title = "Kalsumed Gitleaks Rules"
+
+# Globally allow common placeholder words so templates don't trip rules
+[allowlist]
+description = "Ignore placeholders and template values"
+# If you want to be conservative, keep only 'REDACTED'. Add more as you use them.
+stopwords = ["REDACTED", "PLACEHOLDER", "DUMMY", "EXAMPLE"]
+
+# Optionally, ignore that specific template file entirely (uncomment if you prefer file-based allow)
+# paths = ["apps/backend/.env.template"]
