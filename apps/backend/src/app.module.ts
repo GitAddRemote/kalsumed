@@ -10,7 +10,6 @@ import { RoleModule } from './modules/role/role.module.js';
 import { SessionModule } from './modules/auth/session/session.module.js';
 import { TokenModule } from './modules/auth/token/token.module.js';
 import { resolve } from 'node:path';
-import Joi from 'joi';
 import jwtConfig, { jwtConfigValidationSchema } from './modules/auth/config/jwt.config.js';
 import seedingConfig, { seedingConfigSchema } from './modules/database/seeding.config.js';
 import { OAuthModule } from './modules/auth/oauth/oauth.module.js';
