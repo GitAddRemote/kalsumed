@@ -38,6 +38,7 @@
     "migration:new": "pnpm -F @kalsumed/backend run mig:new",
     "migration:apply": "pnpm -F @kalsumed/backend run mig:apply",
     "migration:revert": "pnpm -F @kalsumed/backend run mig:revert",
+    "migration:dryrun": "pnpm -F @kalsumed/backend run mig:dryrun",
     "migration:check": "pnpm -F @kalsumed/backend run mig:check",
 
     "start": "pnpm run build && NODE_ENV=production pnpm run start:backend",

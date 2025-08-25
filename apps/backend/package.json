@@ -8,14 +8,16 @@
     "build": "nest build",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "test": "jest",
-    "migration:dryrun": "typeorm-ts-node-esm migration:generate -d src/data-source.cli.ts --dr --pretty",
+    "migration:dryrun": "sh -lc 'out=$(pnpm exec typeorm-ts-node-esm migration:generate src/migrations/__dryrun__ -d src/data-source.cli.ts --dr --pretty 2>&1); status=$?; echo \"$out\"; if echo \"$out\" | grep -q \"No changes in database schema were found\"; then exit 0; fi; exit $status'",
+    "migration:check": "typeorm-ts-node-esm migration:generate src/migrations/__check__ -d src/data-source.cli.ts --ch --pretty",
     "migration:run": "typeorm-ts-node-esm migration:run -d src/data-source.cli.ts",
     "migration:revert": "typeorm-ts-node-esm migration:revert -d src/data-source.cli.ts",
     "migration:gen:name": "NAME=${NAME:-${npm_config_name:-Migration}} typeorm-ts-node-esm migration:generate src/migrations/$NAME -d src/data-source.cli.ts --pretty",
+    "mig:dryrun": "docker compose -f ../../docker-compose.dev.yml --env-file ../../apps/backend/.env.development run --rm backend pnpm -F @kalsumed/backend run migration:dryrun",
+    "mig:check": "docker compose -f ../../docker-compose.dev.yml --env-file ../../apps/backend/.env.development run --rm backend pnpm -F @kalsumed/backend run migration:check",
     "mig:new": "NAME=${npm_config_name:-Migration} docker compose -f ../../docker-compose.dev.yml --env-file ../../apps/backend/.env.development run --rm -e NAME backend sh -lc 'pnpm exec typeorm-ts-node-esm migration:generate src/migrations/$NAME -d src/data-source.cli.ts --pretty'",
     "mig:apply": "docker compose -f ../../docker-compose.dev.yml --env-file ../../apps/backend/.env.development run --rm backend pnpm -F @kalsumed/backend run migration:run",
     "mig:revert": "docker compose -f ../../docker-compose.dev.yml --env-file ../../apps/backend/.env.development run --rm backend pnpm -F @kalsumed/backend run migration:revert",
-    "mig:check": "docker compose -f ../../docker-compose.dev.yml --env-file ../../apps/backend/.env.development run --rm backend pnpm -F @kalsumed/backend run migration:dryrun",
     "seed:run": "DOTENV_CONFIG_PATH=.env.development ts-node -r dotenv/config -r tsconfig-paths/register src/cli/seed.ts"
   },
   "dependencies": {
