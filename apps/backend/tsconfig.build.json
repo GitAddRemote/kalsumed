@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "declaration": true,
+    "removeComments": true,
+    "sourceMap": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "importHelpers": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/migrations/**/*"],
+  "watchOptions": {
+    "excludeDirectories": [
+      "src/migrations"
+    ]
+  }
+}

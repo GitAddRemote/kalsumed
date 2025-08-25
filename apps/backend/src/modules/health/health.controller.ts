@@ -5,7 +5,7 @@ import {
   HealthCheckResult,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
-import { RedisService } from '../redis/redis.service';
+import { RedisService } from '../redis/redis.service.js';
 
 @Controller('health')
 export class HealthController {

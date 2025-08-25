@@ -2,61 +2,79 @@ services:
   # -- Infrastructure --
   database:
     image: postgres:15-alpine
+    # Keep this if you want the container to also receive the vars as envs.
+    # Interpolation of ${...} below still requires a top-level --env-file or a root .env.
     env_file:
-      - ./apps/backend/.env.dev
+      - ./apps/backend/.env.development
     environment:
-      POSTGRES_USER:     ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB:       ${POSTGRES_DB}
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      # Map app-level names to Postgres image expectations
+      POSTGRES_DB: ${DATABASE_NAME:-kalsumed_db}
+      POSTGRES_USER: ${DATABASE_USERNAME:-kalsumed}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-changeme}
     volumes:
       - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
 
   redis:
     image: redis:7-alpine
-    env_file:
-      - ./apps/backend/.env.dev
     command:
       - redis-server
       - --appendonly
       - "yes"
       - --requirepass
       - "${REDIS_PASSWORD}"
-    ports:
-      - "6379:6379"
+    env_file:
+      - ./apps/backend/.env.development
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "PING"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
 
   rabbitmq:
-    image: rabbitmq:3-management-alpine
-    env_file:
-      - ./apps/backend/.env.dev
+    image: rabbitmq:3.13-management-alpine
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    ports:
-      - "5672:5672"
-      - "15672:15672"
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+    ports:
+      - "15672:15672" # mgmt UI
+      - "5672:5672"
 
   # -- Edge / Gateway --
   gateway:
-    build:
-      context: .
-      dockerfile: docker/gateway/Dockerfile
-    command: [ "traefik" ]
+    image: traefik:v2.11
+    command:
+      - "--api.dashboard=true"
+      - "--providers.file.directory=/etc/traefik"
+      - "--entrypoints.web.address=:80"
+    volumes:
+      - ./docker/gateway:/etc/traefik:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"
-    volumes:
-      - ./apps/gateway/traefik/certificates:/certificates
 
   # -- Backend (NestJS in watch mode) --
   backend:
@@ -64,37 +82,58 @@ services:
       context: .
       dockerfile: docker/backend/Dockerfile.dev
     working_dir: /usr/src/apps/backend
+    env_file:
+      - ./apps/backend/.env.development
+    environment:
+      # Ensure Nest treats CI like prod regarding env file loading
+      CI: ${CI:-0}
+      NODE_ENV: ${NODE_ENV:-development}
+      SEEDING_MODE: ${SEEDING_MODE:-auto}
+      # .env.development provides: DATABASE_*, REDIS_*, SESSION_SECRET, JWT_*, SEEDING_MODE, etc.
     depends_on:
       database:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_started
     volumes:
       - ./apps/backend:/usr/src/apps/backend:delegated
       - backend_node_modules:/usr/src/apps/backend/node_modules
       - backend_dist:/usr/src/apps/backend/dist
+      - ./tsconfig.base.json:/usr/src/tsconfig.base.json:ro
     ports:
       - "3000:3000"
-    env_file:
-      - ./apps/backend/.env.dev
+    restart: unless-stopped
+    # 🔹 Run migrations before starting the app (dev-only)
+    command: >
+      sh -c "
+        pnpm run migration:run &&
+        pnpm run dev
+      "
 
   # -- Frontend (Vite in watch mode) --
   frontend:
     build:
       context: .
       dockerfile: docker/frontend/Dockerfile.dev
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
     working_dir: /usr/src/apps/frontend
+    env_file:
+      - ./apps/frontend/.env.development
+    environment:
+      CI: "1"
+      CHOKIDAR_USEPOLLING: "1"
     depends_on:
       - backend
     volumes:
       - ./apps/frontend:/usr/src/apps/frontend:delegated
+      - ./tsconfig.base.json:/usr/src/tsconfig.base.json:ro
       - frontend_node_modules:/usr/src/apps/frontend/node_modules
     ports:
       - "5173:5173"
-    env_file:
-      - ./apps/frontend/.env.dev
+    restart: unless-stopped
 
 volumes:
   db-data:

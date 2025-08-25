@@ -3,22 +3,31 @@ FROM node:20-alpine
 WORKDIR /usr/src
 
 # 2. pnpm setup
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.14.0 --activate
 
 # 3. copy monorepo manifests + backend manifest
 COPY package.json pnpm-lock.yaml turbo.json pnpm-workspace.yaml ./
+COPY tsconfig.base.json ./
 COPY apps/backend/package.json apps/backend/
 
 # 4. install *all* deps (including @nestjs/cli hoisted into the workspace)
 RUN pnpm install --frozen-lockfile
 
-# 5. switch into backend & copy only build-time files
+# 5. copy build configs and source
 WORKDIR /usr/src/apps/backend
 COPY apps/backend/tsconfig.json tsconfig.json
+COPY apps/backend/tsconfig.build.json tsconfig.build.json
+COPY apps/backend/nest-cli.json nest-cli.json
 COPY apps/backend/src src/
 
-# 6. build
+# Debug step - check TypeScript version and config (optional)
+RUN pnpm exec tsc --version
+RUN cat tsconfig.json
+RUN cat tsconfig.build.json
+
+# 6. build once (optional for faster hot-starts; app still runs in watch mode)
 RUN pnpm run build
 
 # 7. dev entrypoint
-CMD ["pnpm", "--filter", "@kalsumed/backend", "dev"]
+# Since docker-compose sets working_dir to /usr/src/apps/backend, keep it simple:
+CMD ["pnpm", "run", "dev"]

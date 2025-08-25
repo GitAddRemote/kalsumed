@@ -2,7 +2,7 @@
   "name": "kalsumed",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@8.6.0",
+  "packageManager": "pnpm@10.14.0",
   "engines": {
     "node": ">=18.0.0"
   },
@@ -12,27 +12,43 @@
   },
   "license": "MIT",
   "scripts": {
-    "clean": "rimraf .turbo node_modules",
+    "dev": "pnpm run compose:up:dev",
+    "dev:local": "concurrently \"pnpm --filter @kalsumed/backend run dev\" \"pnpm --filter @kalsumed/frontend run dev\"",
+
+    "build:all": "pnpm --filter \"@kalsumed/*\" run build",
+    "lint:all": "pnpm --filter \"@kalsumed/*\" run lint",
+    "test:all": "pnpm --filter \"@kalsumed/*\" run test",
+    "clean": "pnpm --filter \"@kalsumed/*\" run clean && rm -rf node_modules/.pnpm",
+    "type-check": "pnpm --filter \"@kalsumed/*\" run type-check",
+
     "bootstrap": "pnpm install",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "test:unit": "pnpm --filter @kalsumed/backend test -- --passWithNoTests && pnpm --filter @kalsumed/frontend test -- --passWithNoTests",
+
     "build:backend": "pnpm --filter @kalsumed/backend run build",
     "build:frontend": "pnpm --filter @kalsumed/frontend run build",
+
     "compose:up:dev": "docker-compose -f docker-compose.dev.yml up --build",
     "compose:down:dev": "docker-compose -f docker-compose.dev.yml down",
     "compose:up:prod": "docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d",
     "compose:down:prod": "docker-compose -f docker-compose.yml -f docker-compose.prod.yml down",
-    "dev": "pnpm run compose:up:dev",
+
+    "migration:new": "pnpm -F @kalsumed/backend run mig:new",
+    "migration:apply": "pnpm -F @kalsumed/backend run mig:apply",
+    "migration:revert": "pnpm -F @kalsumed/backend run mig:revert",
+    "migration:dryrun": "pnpm -F @kalsumed/backend run mig:dryrun",
+    "migration:check": "pnpm -F @kalsumed/backend run mig:check",
+
     "start": "pnpm run build && NODE_ENV=production pnpm run start:backend",
     "start:backend": "NODE_ENV=production pnpm --filter @kalsumed/backend run start",
     "start:frontend": "serve -s apps/frontend/dist"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.0.0",
-    "@typescript-eslint/parser": "^5.0.0",
-    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.1",
+    "@typescript-eslint/parser": "^8.39.1",
+    "eslint": "^9.0.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",

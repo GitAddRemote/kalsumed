@@ -1,19 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import type { Redis as RedisClient } from 'ioredis';
-import Redis from 'ioredis';
+import { Inject, Injectable } from '@nestjs/common';
+import { REDIS_CLIENT, type RedisClient } from './redis.tokens.js';
 
 @Injectable()
 export class RedisService {
-  private client: RedisClient;
-
-  constructor(private readonly config: ConfigService) {
-    this.client = new Redis({
-      host: config.get('REDIS_HOST', 'localhost'),
-      port: Number(config.get<number>('REDIS_PORT', 6379)),
-      password: config.get<string>('REDIS_PASSWORD'),
-    });
-  }
+  constructor(@Inject(REDIS_CLIENT) private readonly client: RedisClient) {}
 
   async ping(): Promise<string> {
     return this.client.ping();
@@ -23,7 +13,10 @@ export class RedisService {
     return this.client.get(key);
   }
 
-  async set(key: string, value: string): Promise<'OK'> {
+  async set(key: string, value: string, ttlSeconds?: number): Promise<string | null> {
+    if (ttlSeconds && ttlSeconds > 0) {
+      return this.client.set(key, value, { EX: ttlSeconds });
+    }
     return this.client.set(key, value);
   }
 }
