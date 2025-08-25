@@ -1,16 +1,25 @@
-// apps/backend/src/modules/user/user.service.ts
-
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { UserRepository } from './user.repository.js';
 import { User } from '../user/entities/user.entity.js';
 
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function normalizeUsername(username: string): string {
+  return username.trim();
+}
+
 @Injectable()
 export class UserService {
-  constructor(private readonly users: UserRepository) {}
+  constructor(
+    private readonly users: UserRepository,
+    private readonly dataSource: DataSource,
+  ) {}
 
   /**
-   * Retrieve a single user by UUID
-   * @param id the user's UUID
+   * Retrieve a single user by UUID (throws 404 if not found).
    */
   async getById(id: string): Promise<User> {
     const user = await this.users.findById(id);
@@ -21,11 +30,18 @@ export class UserService {
   }
 
   /**
-   * Retrieve a single user by username
-   * @param username the user's username
+   * Retrieve a single user by username (case-insensitive; throws 404 if not found).
+   * Uses LOWER(username) to hit the functional unique index from the migration.
    */
   async getByUsername(username: string): Promise<User> {
-    const user = await this.users.findByUsername(username);
+    const u = normalizeUsername(username);
+    const repo = this.dataSource.getRepository(User);
+
+    const user = await repo
+      .createQueryBuilder('u')
+      .where('LOWER(u.username) = LOWER(:name)', { name: u })
+      .getOne();
+
     if (!user) {
       throw new NotFoundException(`User with username "${username}" not found`);
     }
@@ -33,25 +49,24 @@ export class UserService {
   }
 
   /**
-   * Find a user by their username.
-   *
-   * Performs a lookup in the UserRepository for a user matching the given username.
-   * This method returns `null` if no user is found, allowing the caller to decide
-   * how to handle a missing user (e.g. throwing 404 vs. returning 401).
-   *
-   * @param username - The username to search for (case-sensitive by default; adjust repo if you need case-insensitive)
-   * @returns A Promise that resolves to the User entity if found, or `null` otherwise
+   * Find a user by username (case-insensitive; returns null when missing).
    */
   async findByUsername(username: string): Promise<User | null> {
-    return this.users.findByUsername(username);
+    const u = normalizeUsername(username);
+    const repo = this.dataSource.getRepository(User);
+
+    return repo
+      .createQueryBuilder('u')
+      .where('LOWER(u.username) = LOWER(:name)', { name: u })
+      .getOne();
   }
 
   /**
-   * Retrieve a single user by email
-   * @param email the user's email address
+   * Retrieve a single user by email (citext in DB makes it case-insensitive; throws 404 if not found).
    */
   async getByEmail(email: string): Promise<User> {
-    const user = await this.users.findByEmail(email);
+    const e = normalizeEmail(email);
+    const user = await this.users.findByEmail(e);
     if (!user) {
       throw new NotFoundException(`User with email "${email}" not found`);
     }
@@ -59,46 +74,46 @@ export class UserService {
   }
 
   /**
-   * Retrieve a user by OAuth provider account
-   * @param provider the OAuth provider name
-   * @param providerUserId the provider-specific user ID
+   * Retrieve a user by OAuth provider account (returns null when missing).
    */
-  async findByOAuthAccount(
-    provider: string,
-    providerUserId: string
-  ): Promise<User | null> {
+  async findByOAuthAccount(provider: string, providerUserId: string): Promise<User | null> {
     return this.users.findByOAuthAccount(provider, providerUserId);
   }
 
   /**
-   * Create a new local user (username, email, and password hash)
-   * @param username desired username
-   * @param email user email
-   * @param passwordHash hashed password
+   * Create a new local user.
+   * Normalizes email (lowercase) and trims username.
    */
-  async createLocal(
-    username: string,
-    email: string,
-    passwordHash: string
-  ): Promise<User> {
-    const newUser: Partial<User> = { username, email, passwordHash };
+  async createLocal(username: string, email: string, passwordHash: string): Promise<User> {
+    const newUser: Partial<User> = {
+      username: normalizeUsername(username),
+      email: normalizeEmail(email),
+      passwordHash,
+    };
     return this.users.save(newUser);
   }
 
   /**
-   * Update an existing user's attributes
-   * @param id the user's UUID
-   * @param attrs partial set of attributes to update
+   * Update an existing user's attributes.
+   * Applies the same normalization as createLocal.
    */
   async update(id: string, attrs: Partial<User>): Promise<User> {
     const user = await this.getById(id);
-    Object.assign(user, attrs);
+
+    const next: Partial<User> = { ...attrs };
+    if (typeof next.username === 'string') {
+      next.username = normalizeUsername(next.username);
+    }
+    if (typeof next.email === 'string') {
+      next.email = normalizeEmail(next.email);
+    }
+
+    Object.assign(user, next);
     return this.users.save(user);
   }
 
   /**
-   * Soft-delete a user
-   * @param id the user's UUID
+   * Soft-delete a user.
    */
   async delete(id: string): Promise<void> {
     const user = await this.getById(id);
@@ -106,14 +121,14 @@ export class UserService {
   }
 
   /**
-   * Retrieve all users
+   * Retrieve all users.
    */
   async findAll(): Promise<User[]> {
     return this.users.findAll();
   }
 
   /**
-   * Alias for findAll, for controller naming consistency
+   * Alias for findAll, for controller naming consistency.
    */
   async listAll(): Promise<User[]> {
     return this.findAll();

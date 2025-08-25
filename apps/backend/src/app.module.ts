@@ -25,7 +25,7 @@ import { HealthModule } from './modules/health/health.module.js';
 import { UserModule } from './modules/user/user.module.js';
 import { RoleModule } from './modules/role/role.module.js';
 import { SessionModule } from './modules/auth/session/session.module.js';
-import { TokenModule } from './modules/auth/token/token.module.js';
+
 
 import jwtConfig, { jwtConfigValidationSchema } from './modules/auth/config/jwt.config.js';
 import seedingConfig, { seedingConfigSchema } from './modules/database/seeding.config.js';
@@ -99,7 +99,6 @@ const isCI = !!process.env.CI;
 
     // Auth
     SessionModule,
-    TokenModule,
 
     // Conditional OAuth strategies
     OAuthModule.register(),

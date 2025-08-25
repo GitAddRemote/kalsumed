@@ -2,9 +2,9 @@
  * @file AuthController
  * @summary Handles authentication endpoints (login, refresh, logout) and cookie management.
  * @description
- * - Validates credentials and issues tokens.
+ * - Validates credentials (email OR username) and issues tokens.
  * - Supports refresh via request body or HTTP-only cookie.
- * - Uses runtime-safe cookie extraction to avoid `any` and satisfy ESLint.
+ * - Uses safe runtime narrowing for cookies; no `any`, no unsafe member access.
  * @module AuthController
  * @author Demian
  * @copyright
@@ -12,6 +12,7 @@
  */
 
 import {
+  BadRequestException,
   Body,
   Controller,
   HttpCode,
@@ -22,103 +23,63 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { LoginDto, RefreshDto } from './dto/index.js';
 import { AuthService, AuthTokensDto } from './auth.service.js';
+import type { User } from '../user/entities/user.entity.js';
 
-/**
- * Narrow a cookie value to a string, if present.
- * This treats incoming request data as unknown and narrows at the boundary,
- * keeping ESLint (`no-unsafe-assignment` / `no-unsafe-member-access`) happy.
- *
- * @param req - Express request
- * @param name - Cookie name to extract
- * @returns The cookie value if it is a string; otherwise undefined
- */
+/** Type guard: is Record<string, string>? */
+function isStringRecord(value: unknown): value is Record<string, string> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  for (const v of Object.values(value as Record<string, unknown>)) {
+    if (typeof v !== 'string') return false;
+  }
+  return true;
+}
+
+/** Type guard: does obj have a 'cookies' field (unknown-typed)? */
+function hasCookieJar(obj: unknown): obj is { cookies: unknown } {
+  return typeof obj === 'object' && obj !== null && 'cookies' in (obj as Record<string, unknown>);
+}
+
+/** Safely get a cookie value as string (or undefined). */
 function getCookie(req: Request, name: string): string | undefined {
-  // `req.cookies` may be missing or untyped depending on middleware order.
-  const cookiesUnknown = (req as { cookies?: unknown }).cookies;
-  if (!cookiesUnknown || typeof cookiesUnknown !== 'object') return undefined;
-
-  const value = (cookiesUnknown as Record<string, unknown>)[name];
-  return typeof value === 'string' ? value : undefined;
+  if (!hasCookieJar(req)) return undefined;
+  const jarUnknown: unknown = req.cookies;
+  if (!isStringRecord(jarUnknown)) return undefined;
+  return jarUnknown[name];
 }
 
-/**
- * DTO for the login request body.
- */
-export class LoginDto {
-  /** User email (must be a valid email). */
-  @IsEmail()
-  email!: string;
-
-  /** User password (minimum 6 characters). */
-  @IsString()
-  @MinLength(6)
-  password!: string;
+/** Minimal user-shape guard so we never pass unknown to the service */
+function isUser(u: unknown): u is User {
+  return typeof u === 'object' && u !== null;
 }
 
-/**
- * DTO for the refresh request body.
- * The token can also be supplied via the `refresh_token` cookie.
- */
-export class RefreshDto {
-  /** Optional refresh token; if omitted, the controller falls back to cookie. */
-  @IsOptional()
-  @IsString()
-  refreshToken?: string;
-}
-
-/**
- * Authentication controller.
- *
- * Routes:
- * - POST /auth/login    → Issues access/refresh tokens and sets cookies.
- * - POST /auth/refresh  → Exchanges refresh token for new tokens.
- * - POST /auth/logout   → Clears auth cookies and performs server-side logout.
- */
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
-  /**
-   * Authenticate a user with email/password and return tokens.
-   * Also sets HTTP-only cookies for access and refresh tokens.
-   *
-   * @param dto - Login credentials
-   * @param res - Express response (passthrough)
-   * @returns Newly issued access/refresh tokens
-   * @throws UnauthorizedException When credentials are invalid
-   */
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthTokensDto> {
-    if (!dto.email || !dto.password) {
+    const identifier = dto.identifier?.trim();
+    if (!identifier) {
+      throw new BadRequestException('Provide either email or username.');
+    }
+
+    const candidate = await this.auth.validateUser(identifier, dto.password);
+    if (!isUser(candidate)) {
+      // covers null or unexpected shapes
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const user = await this.auth.validateUser(dto.email, dto.password);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    const tokens = await this.auth.login(user);
+    const tokens = await this.auth.login(candidate);
     this.setAuthCookies(res, tokens);
     return tokens;
   }
 
-  /**
-   * Refresh tokens using either the request body or the `refresh_token` cookie.
-   * Returns new access/refresh tokens and updates cookies.
-   *
-   * @param dto - Refresh request; body token is optional
-   * @param req - Express request (cookies are safely narrowed)
-   * @param res - Express response (passthrough)
-   * @returns Refreshed access/refresh tokens
-   * @throws UnauthorizedException When no valid refresh token is provided
-   */
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
@@ -138,12 +99,6 @@ export class AuthController {
     return tokens;
   }
 
-  /**
-   * Log the user out by clearing authentication cookies.
-   * Also invokes server-side logout (e.g., token revocation/invalidation).
-   *
-   * @param res - Express response (passthrough)
-   */
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   logout(@Res({ passthrough: true }) res: Response): void {
@@ -151,14 +106,6 @@ export class AuthController {
     this.auth.logout();
   }
 
-  /**
-   * Set HTTP-only cookies for access and refresh tokens.
-   * Access token: short-lived (15 minutes).
-   * Refresh token: long-lived (30 days).
-   *
-   * @param res - Express response
-   * @param tokens - Tokens to persist in cookies
-   */
   private setAuthCookies(res: Response, tokens: AuthTokensDto): void {
     const secure = process.env.NODE_ENV === 'production';
 
@@ -177,11 +124,6 @@ export class AuthController {
     });
   }
 
-  /**
-   * Clear authentication cookies.
-   *
-   * @param res - Express response
-   */
   private clearAuthCookies(res: Response): void {
     const secure = process.env.NODE_ENV === 'production';
 
