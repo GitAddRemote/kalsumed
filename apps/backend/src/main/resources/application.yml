@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: kalsumed-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/kalsumed}
+    username: ${DB_USER:kalsumed}
+    password: ${DB_PASS:kalsumed}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,httpexchanges,threaddump
+  tracing:
+    sampling:
+      probability: 1.0
+server:
+  port: 8080
+app:
+  jwt:
+    secret: ${JWT_SECRET:please-change-this-very-long-random-secret-12345678901234567890}
+    ttlSeconds: 3600
+kalsumed:
+  kafka:
+    topic: kalsumed.events

@@ -1,0 +1,1 @@
+package com.presstronic.kalsumed.common; public record ApiMessage(String message) {}

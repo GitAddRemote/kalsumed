@@ -1,0 +1,1 @@
+INSERT INTO tenant (slug, name) VALUES ('default','Default Tenant') ON CONFLICT DO NOTHING;
