@@ -49,4 +49,23 @@ public class AuthController {
     }
     return ResponseEntity.noContent().build();
   }
+
+  @PostMapping("/forgot-password")
+  public ResponseEntity<?> forgotPassword(@Valid @RequestBody AuthDtos.ForgotPasswordRequest req) {
+    users.initiatePasswordReset(req.email());
+    // Always return success to prevent email enumeration
+    return ResponseEntity.ok().body(new MessageResponse("If the email exists, a password reset link has been sent."));
+  }
+
+  @PostMapping("/reset-password")
+  public ResponseEntity<?> resetPassword(@Valid @RequestBody AuthDtos.ResetPasswordRequest req) {
+    try {
+      users.resetPassword(req.token(), req.newPassword());
+      return ResponseEntity.ok().body(new MessageResponse("Password has been reset successfully."));
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+    }
+  }
+
+  private record MessageResponse(String message) {}
 }
