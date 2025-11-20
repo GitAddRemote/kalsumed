@@ -12,6 +12,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 0
   data:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}
