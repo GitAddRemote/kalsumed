@@ -35,5 +35,10 @@ subprojects {
         imports {
             mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
         }
+        dependencies {
+            // Upgrade Flyway to support PostgreSQL 16.11
+            dependency("org.flywaydb:flyway-core:10.18.2")
+            dependency("org.flywaydb:flyway-database-postgresql:10.18.2")
+        }
     }
 }
