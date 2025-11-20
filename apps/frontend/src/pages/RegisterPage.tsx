@@ -31,7 +31,7 @@ export const RegisterPage = () => {
       await register({ email, password });
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || err.response?.data || 'Registration failed. Please try again.');
+      setError(err.response?.data?.error || err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }

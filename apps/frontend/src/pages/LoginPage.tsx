@@ -19,7 +19,7 @@ export const LoginPage = () => {
       await login({ email, password });
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || err.response?.data || 'Login failed. Please check your credentials.');
+      setError(err.response?.data?.error || err.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
