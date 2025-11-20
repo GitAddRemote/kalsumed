@@ -6,14 +6,14 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
 @Service
 public class JwtService {
-  private final Key key; private final long ttlSeconds;
+  private final SecretKey key; private final long ttlSeconds;
   public JwtService(@Value("${app.jwt.secret:change-me}") String secret, @Value("${app.jwt.ttlSeconds:3600}") long ttlSeconds){
     this.key = Keys.hmacShaKeyFor(secret.getBytes()); this.ttlSeconds = ttlSeconds;
   }
