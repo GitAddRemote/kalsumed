@@ -1,11 +1,26 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Maven (legacy)
 target/
-!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
 .idea/
 *.iml
 .project
 .classpath
 .settings/
 .vscode/
+
+# OS
 .DS_Store
+
+# Logs
 *.log
+
+# Environment
 .env

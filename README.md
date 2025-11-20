@@ -15,6 +15,7 @@ A full-stack monolith application built with React and Spring Boot, designed for
 
 ### Backend
 - **Java 21** / **Spring Boot 3.3.4**
+- **Gradle** with Kotlin DSL for build automation
 - **PostgreSQL 16** with Flyway migrations
 - **Redis** for caching and rate limiting
 - **Apache Kafka** for event-driven architecture
@@ -45,13 +46,12 @@ This starts PostgreSQL, Redis, Kafka, and monitoring stack.
 ### 2. Run Backend
 
 ```bash
-# Using local Maven
-mvn -q -T 1C -DskipTests package
-cd apps/backend && mvn spring-boot:run
+# Using Gradle Wrapper (recommended)
+./gradlew :apps:backend:bootRun
 
-# Or using Docker Maven wrapper
-./scripts/mvnw.sh -q -T 1C -DskipTests package
-./scripts/mvnw.sh -pl apps/backend spring-boot:run
+# Or build and run the JAR
+./gradlew :apps:backend:bootJar
+java -jar apps/backend/build/libs/kalsumed-backend.jar
 ```
 
 Backend will start on **http://localhost:8080**
@@ -184,16 +184,20 @@ npm run lint
 
 ### Backend Development
 ```bash
-cd apps/backend
-
 # Run tests
-mvn test
+./gradlew test
 
-# Package
-mvn clean package
+# Build all modules
+./gradlew build
+
+# Build backend JAR
+./gradlew :apps:backend:bootJar
+
+# Clean build artifacts
+./gradlew clean
 
 # Run with Docker
-docker build -t kalsumed-backend -f Dockerfile ../..
+docker build -t kalsumed-backend -f apps/backend/Dockerfile .
 docker run -p 8080:8080 kalsumed-backend
 ```
 
