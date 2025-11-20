@@ -15,7 +15,7 @@ public class ProfileController {
 
   @GetMapping("/me")
   public ResponseEntity<ProfileDtos.ReadResponse> me(@AuthenticationPrincipal UserEntity user){
-    return ResponseEntity.ok(new ProfileDtos.ReadResponse(user.getId(), user.getEmail(), user.getDisplayName(), user.getTimeZone(), user.isEnabled()));
+    return ResponseEntity.ok(new ProfileDtos.ReadResponse(user.getId(), user.getEmail(), user.getDisplayName(), user.getTimeZone(), user.getRole().name(), user.isEnabled()));
   }
   @GetMapping("/profile") public ResponseEntity<ProfileDtos.ReadResponse> read(@AuthenticationPrincipal UserEntity user){ return me(user); }
 
